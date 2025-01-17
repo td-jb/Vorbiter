@@ -1,0 +1,52 @@
+levels
+{
+	array: collection of level structs that comprise the game
+}
+
+level
+{
+	start: the point from which projectiles are launched
+	endpoint: the point that the projectiles must hit
+	components: objects in the game that act as obstacles to reaching the end point
+}
+
+start
+{
+	v2x: the x coordinate
+	v2y: the y coordinate
+	r: the radius
+	name: name for identification purposes
+}
+
+endpoint
+{
+	v2x: the x coordinate
+	v2y: the y coordinate
+	r: the starting radius
+	tr: the target radius
+	damage: the current damage
+	cr: the current radius, based on the starting radius and the damage
+	mass: the current mass, based on the current radius, stored to prevent redundant calculations
+	name: name for identification purposes
+}
+
+circle
+{
+	v2x: the x coordinate
+	v2y: the y coordinate
+	r: the starting radius
+	damage: the current damage
+	cr: the current radius, based on the starting radius and the damage
+	mass: the current mass, based on the current radius, stored to prevent redundant calculations
+	name: name for identification purposes
+}
+
+projectile
+{
+	x_vel: the current x velocity
+	y_vel: the current y velocity
+	x_pos: the current x position
+	y_pos: the current y position
+	mult: the current multiplier
+	r: the current radius
+}

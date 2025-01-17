@@ -1,0 +1,27 @@
+/// @description Insert description here
+// You can write your code in this editor
+
+create_time = current_time;
+dead = false;
+engineSound = noone;
+multiTimer = 0;
+multiLifespan = 60;
+multi_x = 0;
+multi_y = 0;
+frame = 0;
+if(global.liveProjectiles < 150)
+	engineSound = audio_play_sound(Engine,global.liveProjectiles,true);
+
+x_trail = array_create(global.trail_length);
+y_trail = array_create(global.trail_length);
+
+
+for(var i =0; i < array_length(x_trail); i++){
+	x_trail[i] = x;
+	y_trail[i] = y;
+	
+}
+points = 0;
+invincibility = 2000;
+hit_list = array_create(0);
+bounceSound = noone;
