@@ -6,7 +6,8 @@ function load_levels(){
 	var _buffer = buffer_load("levels.json");
 	var _string = buffer_read(_buffer, buffer_string);
 	buffer_delete(_buffer);
-	global.levels = json_parse(_string);
+	global.universe = json_parse(_string);
+	global.levels = global.universe.regions[0];
 	for(var i = 0; i < array_length(global.levels.array); i++){
 		reset_struct(global.levels.array[i].start);
 		reset_struct(global.levels.array[i].endpoint);
@@ -275,16 +276,30 @@ function add_default_level(){
 	
 }
 function add_component_to_level(_v2x, _v2y, _r, type = "circle"){
-	var newComponent = {name: type,
-		v2x: _v2x,
-		v2y: _v2y,
-		r: _r,
-		dr: _r,
-		mass: power(_r,2),
-		damage: 0,
-		_id: array_length( obj_game.level.components)+2
-		};
-	
+	var newComponent = noone;
+	switch type{
+		case "circle":
+			newComponent = {name: type,
+				v2x: _v2x,
+				v2y: _v2y,
+				r: _r,
+				dr: _r,
+				mass: power(_r,2),
+				damage: 0,
+				_id: array_length( obj_game.level.components)+2
+				};
+			break;
+		case "square":{
+			newComponent = {name: type,
+			v2x: _v2x,
+			v2y: _v2y,
+			r: _r,
+			mass: 0,
+			damage: 0,
+			_id: array_length( obj_game.level.components)+2
+			};
+		}
+	}
 	array_push( obj_game.level.components, newComponent);
 	return newComponent;
 }

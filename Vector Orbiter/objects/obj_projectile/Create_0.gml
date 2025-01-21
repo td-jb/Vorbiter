@@ -1,7 +1,6 @@
 /// @description Insert description here
 // You can write your code in this editor
 
-create_time = current_time;
 dead = false;
 engineSound = noone;
 multiTimer = 0;
@@ -9,7 +8,8 @@ multiLifespan = 60;
 multi_x = 0;
 multi_y = 0;
 frame = 0;
-startTime = current_time
+startTime = current_time;
+teleport_target = noone;
 if(global.liveProjectiles < 150){
 	engineSound = audio_play_sound(Engine,global.liveProjectiles,true);
 	//if(global.liveProjectiles%2 == 0)
@@ -31,7 +31,7 @@ for(var i =0; i < array_length(x_trail); i++){
 	
 }
 points = 0;
-invincibility = 2000;
+invincibility = true;
 hit_list = array_create(0);
 bounceSound = noone;
 projectile = noone;

@@ -43,14 +43,14 @@ completeTime = 0;
 overtime = 0;
 
 room_frame = 0;
-lastShot = current_time;
+lastShot = 0;
 room_start = current_time;
-baseShotDelay = 100;
-shotDelay = 100;
+baseShotDelay = 6;
+shotDelay = 6;
 //global.syncGroup = audio_create_sync_group(true)
 
 endEmitter = audio_emitter_create();
-endSound = audio_play_sound_on(endEmitter,EndDrum,true,0, 0.5);
+endSound = audio_play_sound_on(endEmitter,EndDrum,true,0, 0.25);
 shootingSound = audio_play_sound(_108hzbinaural,0,true, 0);
 
 global.projectileCount = 0;

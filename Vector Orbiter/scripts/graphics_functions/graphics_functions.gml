@@ -16,7 +16,7 @@ function set_grid_shader(){
 		shader_set_uniform_f(pHeight, 1000);	
 	else
 		shader_set_uniform_f(pHeight, -250);	
-	var p_f = ((current_time-room_start)%((4000*pulseRate)))/(4000*pulseRate);
+	var p_f = ((room_frame)%((global.minFrameRate*4*pulseRate)))/(global.minFrameRate*4*pulseRate);
 	shader_set_uniform_f(cosP, p_f);
 }
 
@@ -540,19 +540,19 @@ function draw_game(_main, _x, _y, _scale, _level = noone){
 			gpu_set_alphatestenable(true)
 		}
 		draw_grid();
-		if(global.show_ui)
+		if(global.show_ui&& !levelComplete && !reset)
 			draw_preview_trajectory();
 	}
 	draw_components(_x, _y, _scale, _level)
 	draw_end_point(_x, _y, _scale, _level);
-	if(_main){
+	if(_main && !levelComplete && !reset){
 		draw_shoot_cursor();
 		draw_projectiles();
 		draw_explosions();
 	}
-	if(!levelComplete && !reset && _level == obj_game.level)
+	if( _level == obj_game.level && !levelComplete && !reset)
 		draw_start_point(_x, _y, _scale,_level);
-	if(_main){
+	if(_main && !levelComplete && !reset){
 		draw_aim_cursor();
 		draw_debug();
 	}

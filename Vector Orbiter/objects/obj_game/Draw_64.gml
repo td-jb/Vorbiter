@@ -11,7 +11,7 @@ if(global.intro || !global.show_ui)
 var screenMidX = display_get_gui_width()/2;
 var screenMidY= display_get_gui_height()/2;
 
-var levelName = string(global.currentLevel+1) + " - " +level.name;
+var levelName =  "Sector " +string( global.currentLevel);
 var stringWidth = string_width(levelName);
 var stringHeight = string_height(levelName);
 if(!window_has_focus()){

@@ -1,6 +1,5 @@
 /// @description Insert description here
 // You can write your code in this editor
-createTime = current_time;
 color = c_white;
 timeNow = 0;
 timePercentage = 0;

@@ -168,12 +168,12 @@ function projectile_boundary_check(_projectile){
 	var compareSquare = global.play_area_radius_sq;
 	var startDist = power(get_struct_x_position(obj_game.level.start) - x, 2) + power(get_struct_y_position(obj_game.level.start) - y, 2);
 	var startComp = power(obj_game.level.start.r + _projectile.r, 2);
-	if(!dead && (distSquare >= compareSquare || (startDist < startComp && current_time - create_time > invincibility))){
+	if(!dead && (distSquare >= compareSquare || (startDist < startComp && !invincibility))){
 
 		if( bounceSound == noone || !audio_is_playing(bounceSound))
 			bounceSound = audio_play_sound(Bounce,0,false,0.5);
 		var pitch = floor(random_range(1,4.5))
-		if((startDist < startComp && current_time - create_time > invincibility)){
+		if((startDist < startComp && !invincibility)){
 			pitch = pitch/4;
 			if(instance_exists(bounceSound))
 				audio_sound_pitch(bounceSound, pitch);
@@ -218,6 +218,9 @@ function projectile_boundary_check(_projectile){
 		log_projectile_performance_time(current_time-startTime);
 		return;
 	}
+	if(startDist>startComp){
+		invincibility = false;	
+	}
 }
 
 function apply_projectile_velocity(_projectile){
@@ -245,7 +248,10 @@ function set_projectile_engine_sound(_dist){
 function apply_projectile_struct_interaction(_projectile, _obj_struct, startTime){
 	var dist =apply_gravitational_acceleration(_obj_struct , projectile.v2x, projectile.v2y,get_projectile_mass(projectile.r), projectile);
 	apply_flyby_mod(_obj_struct,dist,projectile.r, projectile);
-
+	var _square_hit = true;
+	if(_obj_struct == teleport_target){
+		_square_hit = false;
+	}
 	if(struct_collision_check(_projectile, _obj_struct) ){
 		add_damage( _obj_struct , get_projectile_damage(projectile));
 		
@@ -275,13 +281,17 @@ function apply_projectile_struct_interaction(_projectile, _obj_struct, startTime
 				trigger_reset();
 			}		
 		}else if(_obj_struct.name == "square"){
-			if(current_time - create_time > invincibility){
+			_square_hit = true;
+			if(teleport_target != _obj_struct){
+				
 				var start_id = _obj_struct._id;
 				for(var i = 0; i < array_length( obj_game.level.components); i++){
 					if(obj_game.level.components[i]._id != start_id && obj_game.level.components[i].name == "square"){
 						projectile.v2x = obj_game.level.components[i].v2x;
 						projectile.v2y = obj_game.level.components[i].v2y;
-						create_time = current_time;
+						//create_time = current_time;
+						teleport_target = obj_game.level.components[i];
+						break;
 					}
 				}
 			}
@@ -291,6 +301,9 @@ function apply_projectile_struct_interaction(_projectile, _obj_struct, startTime
 			log_projectile_performance_time(current_time-startTime);
 			return -1;
 		}
+	}
+	if(teleport_target != noone && !_square_hit){
+		teleport_target = noone;
 	}
 	return dist;
 }

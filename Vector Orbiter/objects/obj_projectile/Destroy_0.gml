@@ -7,4 +7,4 @@ var explosion = instance_create_layer(x,y,"Instances", obj_explosion);
 explosion.color = make_color_hsv(projectile.color,global.component_saturation,global.component_value);
 explosion.points = points;
 explosion.radius = projectile.r;
-explosion.lifespan = projectile.r*fps/10
+explosion.lifespan = projectile.r*global.minFrameRate/100
