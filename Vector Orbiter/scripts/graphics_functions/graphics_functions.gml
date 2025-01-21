@@ -1,6 +1,6 @@
 // Script assets have changed for v2.3.0 see
 // https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
-
+#region vertex manipulation functions
 function set_grid_shader(){
 
 	shader_set(shd_grid_shader);
@@ -314,16 +314,7 @@ function add_vert_to_buffer(_buffer, _x, _y, _z, alph, col, tex_1 = 0.5, tex_2 =
 	vertex_texcoord(_buffer,tex_1,tex_2);
 	global.frame_vert_count++;
 }
-function get_vert_alpha(x_index, y_index){
-	var x1_p = power(x_index,2);
-	var y1_p = power(y_index,2);
-	var maxAlph = global.grid_alpha;
-	//if(global.inBrowser){
-	//	maxAlph *= 2;	
-	//}
-	var alpha = 1 -clamp(((x1_p + y1_p) /global.play_area_radius_sq),0,1);
-	return alpha * maxAlph;
-}
+#endregion
 function set_camera_view(){
 	/// function sketch
 	// determine component minima and maxima
@@ -383,14 +374,14 @@ function set_camera_view(){
 	}
 	
 	with(obj_projectile){
-		if(x- projectile.r*4 < obj_game.minProjectileX)
-			obj_game.minProjectileX = (x - projectile.r*4 );
-		if(y - projectile.r*4 < obj_game.minProjectileY)
-			obj_game.minProjectileY = (y -projectile.r*4 );		
-		if(x + projectile.r*4 >obj_game.maxProjectileX)
-			obj_game.maxProjectileX = (x +projectile.r*4 );
-		if(y+ projectile.r*4  >obj_game.maxProjectileY )
-			obj_game.maxProjectileY = (y + projectile.r*4 );
+		if(projectile.v2x- projectile.r*4 < obj_game.minProjectileX)
+			obj_game.minProjectileX = (projectile.v2x - projectile.r*4 );
+		if(projectile.v2y - projectile.r*4 < obj_game.minProjectileY)
+			obj_game.minProjectileY = (projectile.v2y -projectile.r*4 );		
+		if(projectile.v2x + projectile.r*4 >obj_game.maxProjectileX)
+			obj_game.maxProjectileX = (projectile.v2x +projectile.r*4 );
+		if(projectile.v2y+ projectile.r*4  >obj_game.maxProjectileY )
+			obj_game.maxProjectileY = (projectile.v2y + projectile.r*4 );
 	}
 	if(room == game_room){
 		
@@ -482,7 +473,7 @@ function set_camera_view(){
 		grid_y_offset = grid_start_y - (currY% global.grid_size) -grid_buffer*global.grid_size;
 	}
 }
-	
+#region draw functions
 function draw_grid(){
 	if(!global.threeD){
 		draw_set_color(make_color_hsv(color_get_hue(global.bg_color),global.component_saturation,.25 * global.component_value));
@@ -534,7 +525,47 @@ function draw_grid(){
 		gpu_set_alphatestenable(false);
 	}
 }
-
+function draw_game(_main, _x, _y, _scale, _level = noone){
+	if(_level == noone){
+		_level = obj_game.level;	
+	}
+	if(global.intro || postGame){
+		return;	
+	}
+	if(_main){
+		draw_background();
+		gpu_set_depth(baseDepth);
+		if(global.inBrowser){
+			camera_apply(global.camera);
+			gpu_set_alphatestenable(true)
+		}
+		draw_grid();
+		if(global.show_ui)
+			draw_preview_trajectory();
+	}
+	draw_components(_x, _y, _scale, _level)
+	draw_end_point(_x, _y, _scale, _level);
+	if(_main){
+		draw_shoot_cursor();
+		draw_projectiles();
+		draw_explosions();
+	}
+	if(!levelComplete && !reset && _level == obj_game.level)
+		draw_start_point(_x, _y, _scale,_level);
+	if(_main){
+		draw_aim_cursor();
+		draw_debug();
+	}
+	
+}
+function draw_debug(){
+	if(global.spiralUpdate &&  global.debugMode < DebugMode.NONE){
+		draw_set_alpha(1);
+		draw_set_color(c_lime);
+		draw_circle(debug_x, debug_y, global.base_grid_size/2, false);	
+	
+	}
+}
 function draw_background(){
 	
 	draw_set_alpha(.5);
@@ -567,37 +598,64 @@ function draw_preview_trajectory(){
 			draw_set_color(make_color_hsv( hue, global.component_saturation, global.component_value))
 			draw_set_alpha(0.1 * (1-i/array_length(shot_preview_x)));
 			draw_line_width(shot_preview_x[i],shot_preview_y[i],shot_preview_x[i+2],shot_preview_y[i+2], shot_preview_r[i]*2);
-	
 		}
 	}
 	draw_set_alpha(1);	
 }
-function draw_components(){
+function draw_components(_x, _y, _scale, _level){
+	
+	if(global.objectDepth){
+		gpu_set_depth(baseDepth)
+		gpu_set_zwriteenable(true)
+		gpu_set_ztestenable(true);
+	}
+	draw_set_circle_precision(32/circle_precision_factor)
 	draw_set_alpha(1);
-	for(var i = 0; i < array_length(level.components); i++){
-		switch(level.components[i].name){
+	for(var i = 0; i < array_length(_level.components); i++){
+		switch(_level.components[i].name){
 			case "circle":
-				draw_set_circle_precision(power(2,ceil(log2(level.components[i].r)))/circle_precision_factor)
-				var baseRadiiSq = power((level.endpoint.r)+(level.components[i].r ),2);
-				var endDistSq = power(level.endpoint.v2x - level.components[i].v2x,2) + power(level.endpoint.v2y - level.components[i].v2y,2)-baseRadiiSq;
-				var combinedRadiiSq = power((level.endpoint.r-level.endpoint.damage)+(level.components[i].r + level.components[i].damage),2)-baseRadiiSq;
+				draw_set_circle_precision(power(2,ceil(log2(_level.components[i].dr)))/circle_precision_factor)
+				var baseRadiiSq = power((_level.endpoint.r)+(_level.components[i].r ),2);
+				var endDistSq = get_struct_square_distance(_level.endpoint, _level.components[i])-baseRadiiSq;
+				var combinedRadiiSq = power((_level.endpoint.dr)+(_level.components[i].dr),2)-baseRadiiSq;
 				var hue = lerp(global.neutral_hue,global.danger_hue, combinedRadiiSq/endDistSq);
 				draw_set_color(make_color_hsv(hue,global.component_saturation,global.component_value));
 				if(global.objectDepth){
-					gpu_set_depth((get_gravity_depth_at_coordinate(level.components[i].v2x,  level.components[i].v2y, (level.components[i].dr))))
+					gpu_set_depth((get_gravity_depth_at_coordinate(_level.components[i].v2x,  _level.components[i].v2y, (_level.components[i].dr))))
 				}else{
 					
 					gpu_set_depth(baseDepth)
 			
 				}
-				var radius =  (level.components[i].dr);
+				var radius =  (_level.components[i].dr);
 				draw_set_alpha(0.1)
-				draw_circle(level.components[i].v2x,  level.components[i].v2y, radius * (1+global.multiplierRadiusMod) , false);
+				var true_x = _x + _level.components[i].v2x* _scale;
+				var true_y = _y+ _level.components[i].v2y * _scale;
+				draw_circle(true_x,true_y, radius * (1+global.multiplierRadiusMod)* _scale , false);
 			
 				draw_set_alpha(1)
-				draw_circle(level.components[i].v2x,  level.components[i].v2y, radius, false);
+				draw_circle(true_x,true_y, radius* _scale, false);
 				draw_set_color(c_black);
-				draw_circle(level.components[i].v2x,  level.components[i].v2y, radius*0.75, false);
+				draw_circle(true_x,true_y, radius* _scale*0.75, false);
+			break;	
+			case "square":
+				draw_set_color(make_color_hsv(global.neutral_hue,global.component_saturation,global.component_value));
+				if(global.objectDepth){
+					gpu_set_depth((get_gravity_depth_at_coordinate(_level.components[i].v2x,  _level.components[i].v2y, (_level.components[i].r))))
+				}else{
+					
+					gpu_set_depth(baseDepth)
+			
+				}
+				var width =  (_level.components[i].r)*_scale;
+				//draw_set_alpha(0.1)
+				var true_x = _x + _level.components[i].v2x* _scale;
+				var true_y = _y+ _level.components[i].v2y * _scale;
+				//draw_rectangle(true_x- (width),true_y- (width), true_x + width, true_y + width , false);
+				draw_set_alpha(1)
+				draw_rectangle(true_x- (width),true_y- (width), true_x + width, true_y + width , false);
+				draw_set_color(c_black);
+				draw_rectangle(true_x- (width)*.25,true_y- (width)*.25, true_x + width*.25, true_y + width*.25 , false);
 			break;
 		}
 		if(global.objectDepth){
@@ -617,7 +675,8 @@ function draw_shoot_cursor(){
 	}
 }
 function draw_aim_cursor(){
-	draw_set_alpha(1);
+	
+		draw_set_alpha(1);
 	if(!shooting && global.show_ui){
 		draw_set_color(c_black)
 		draw_circle(cursor_x, cursor_y, 5 * global.screenScale-1,false);
@@ -626,12 +685,19 @@ function draw_aim_cursor(){
 		if(global.debugMode< DebugMode.NONE){
 			draw_text(cursor_x, cursor_y + 10,"X: " + string(cursor_x) + "\nY: " + string(cursor_y));	
 		}
+		if(room == game_room && last_shot_position[0] != infinity){
+			draw_set_color(global.good_color);
+			draw_set_alpha(0.5)
+			draw_circle(last_shot_position[0], last_shot_position[1], 5 * global.screenScale-1,true);
+			draw_text(last_shot_position[0] + 5, last_shot_position[1] + 5 , "last shot");
+		}
 	}
 	if(global.debugMode< DebugMode.NONE){
 		draw_set_alpha(1);
 		draw_set_color(c_white);
 		draw_text(level.endpoint.v2x,level.endpoint.v2y ,"X: " + string(level.endpoint.v2x) + "\nY: " + string(level.endpoint.v2y));	
 	}
+			draw_set_alpha(1)
 }
 function draw_projectiles(){
 	proj_index = 0;
@@ -660,11 +726,12 @@ function draw_projectiles(){
 			 	start_x = x_trail[max(i-2, 0)];
 				start_y = y_trail[max(i-2, 0)];
 			//gpu_set_depth(get_gravity_depth_at_coordinate(start_x,start_y)/global.depthMod);
-			draw_set_alpha (1-i/array_length(x_trail));
+			
+				draw_set_alpha ((1 )-i/array_length(x_trail));
 			var dist_sq = power(x-start_x,2) + power(y-start_y,2);
 			draw_set_circle_precision(4);
 			if(room == game_room){
-				draw_set_alpha ((1-i/array_length(x_trail))*.25);
+				draw_set_alpha (((1 + global.boost*0.5 )-i/array_length(x_trail))*.25);
 				draw_circle(start_x,start_y, ((projectile.r) + obj_game.pulseFactor)/((i)/array_length(x_trail)+1), true);
 			}else{
 				//draw_set_alpha ((1-i/array_length(x_trail))/2);
@@ -684,10 +751,23 @@ function draw_projectiles(){
 				draw_set_alpha(max(0.2,alpha));
 				draw_circle(x, y, projectile.r + obj_game.pulseFactor + 1, true);	
 			}
-				draw_set_alpha(1);
+			
+			draw_set_alpha(alpha*.4);
+			
+			if(global.boost&& projectile.r > global.projectileRadius){
+				
+				draw_set_color(make_color_hsv(global.neutral_hue,255,255 ));
+				draw_line_width(x,y, x-projectile.x_vel/2, y-projectile.y_vel/2, projectile.r*2);
+					
+			}if(global.brake&& projectile.r > global.projectileRadius){
+				
+				draw_set_color(make_color_hsv(global.danger_hue,255,255 ));
+				draw_line_width(x,y, x+projectile.x_vel/2, y+projectile.y_vel/2, projectile.r*2);
+			}
+			draw_set_alpha(1);
 			draw_set_color(real_color);
 			draw_circle(x, y, projectile.r+ obj_game.pulseFactor, false);
-	
+		
 	
 		}else{
 			var x_off = string_width(character)*scale/2;
@@ -760,17 +840,26 @@ function draw_explosions(){
 	shake_fx_params.g_Magnitude = explosion_count;
 	fx_set_parameters(shake_layer,shake_fx_params);
 }
-
-function draw_start_point(){
-	set_gpu_depth_from_struct(level.start);
+function draw_start_point(_x, _y, _scale, _level){
+	set_gpu_depth_from_struct(_level.start);
 	draw_set_alpha(1);
 	draw_set_circle_precision(16/circle_precision_factor)
 	var value = global.component_value* baseShotDelay/(shotDelay/2)
 	draw_set_color(make_color_hsv( color_get_hue(global.bg_color), global.component_saturation, value ));
-	draw_circle(get_struct_x_position(obj_game.level.start), get_struct_y_position(obj_game.level.start),level.start.r,false);
-	draw_circle(get_struct_x_position(obj_game.level.start), get_struct_y_position(obj_game.level.start),level.start.r,true);
+	
+	var true_x = _x + get_struct_x_position(_level.start) * _scale;
+	var true_y = _y + get_struct_y_position(_level.start) * _scale;
+	draw_circle(true_x, true_y ,_level.start.r * _scale,false);
+	draw_circle(true_x, true_y ,_level.start.r* _scale,true);
 }
-function draw_end_point(){
+function draw_end_point(_x, _y, _scale, _level){
+	
+	if(global.objectDepth){
+		gpu_set_depth(baseDepth);
+		gpu_set_zwriteenable(false)
+		gpu_set_ztestenable(false);
+	}
+	draw_set_circle_precision(16/circle_precision_factor)
 	set_gpu_depth_from_struct(level.endpoint);
 	draw_set_circle_precision(32/circle_precision_factor)
 	draw_set_color(global.projectile_color);
@@ -781,25 +870,36 @@ function draw_end_point(){
 		gpu_set_ztestenable(true);
 	}
 	draw_set_alpha(0.1)
-	var endRad =   (level.endpoint.dr) ;
-	draw_circle(level.endpoint.v2x, level.endpoint.v2y,endRad * (1+global.multiplierRadiusMod) ,false);
+	var endRad =   (_level.endpoint.dr) ;
+	var true_x = _x + get_struct_x_position(_level.endpoint) * _scale;
+	var true_y = _y + get_struct_y_position(_level.endpoint) * _scale;
+	var _pulse = cosPulse;
+	if( _level != obj_game.level)
+		_pulse = 0;
+	draw_circle(true_x, true_y, endRad * (1+global.multiplierRadiusMod) * _scale ,false);
 	draw_set_alpha(1);	
-	draw_circle(level.endpoint.v2x, level.endpoint.v2y,endRad ,false);
+	draw_circle(true_x, true_y ,endRad * _scale ,false);
 	draw_set_color(c_black);
-	draw_circle(level.endpoint.v2x, level.endpoint.v2y,max(level.endpoint.r  - level.endpoint.damage -10 +cosPulse,level.endpoint.tr) ,false);
-
-	if(!levelComplete && !reset){
-		draw_set_color(global.good_color);
-		draw_circle(level.endpoint.v2x, level.endpoint.v2y,level.endpoint.tr,true);
-		draw_set_color(global.projectile_color);
-		var gravRings = ((current_time-room_start)/2000* global.simRate) %1;
-		draw_set_alpha(gravRings *.5 + .25);
-		draw_circle(level.endpoint.v2x, level.endpoint.v2y,level.endpoint.tr - gravRings*level.endpoint.tr,true);
-	
-		draw_set_alpha(((gravRings + .5)%1 ) *.5 + .25);
-		draw_circle(level.endpoint.v2x, level.endpoint.v2y,level.endpoint.tr - ((gravRings + .5)%1)*level.endpoint.tr,true);
+	draw_circle(true_x, true_y ,max(_level.endpoint.r  - _level.endpoint.damage -10 +_pulse,_level.endpoint.tr) * _scale ,false);
+	if(_level == obj_game.level){
+		draw_game(false, 
+				get_struct_x_position(obj_game.level.endpoint), 
+				get_struct_y_position(obj_game.level.endpoint),
+				(obj_game.level.endpoint.tr + cosPulse)/global.play_area_radius,
+				global.levels.array[min( global.currentLevel + 1, array_length(global.levels.array) - 1)]);
+		if(!levelComplete && !reset){
+			draw_set_color(global.good_color);
+			draw_circle(true_x, true_y ,_level.endpoint.tr * _scale,true);
+			draw_set_color(global.projectile_color);
+			var gravRings = ((current_time-room_start)/2000* global.simRate) %1;
+			draw_set_alpha(gravRings *.5 + .25);
+			draw_circle(true_x, true_y ,_level.endpoint.tr* _scale - gravRings*_level.endpoint.tr * _scale,true);
+			draw_set_alpha(((gravRings + .5)%1 ) *.5 + .25);
+			draw_circle(true_x,true_y, _level.endpoint.tr* _scale - ((gravRings + .5)%1)*_level.endpoint.tr* _scale,true);
+		}
 	}
 }
+#endregion
 function set_gpu_depth_from_point(x_coord, y_coord, radius = 1){
 	if(global.objectDepth){
 		gpu_set_depth(get_gravity_depth_at_coordinate(x_coord, y_coord, radius)/global.depthMod);
@@ -814,8 +914,25 @@ function set_gpu_depth_from_point(x_coord, y_coord, radius = 1){
 function set_gpu_depth_from_struct(obj_struct){
 	set_gpu_depth_from_point(obj_struct.v2x, obj_struct.v2y, (obj_struct.dr)/2);
 }
-
-
+function reset_colors(){
+	
+	
+	global.bg_color = make_color_hsv(255,global.component_saturation,global.component_value);
+	global.good_color = make_color_hsv(color_get_hue(c_lime), global.component_saturation, global.component_value);
+	global.projectile_color = make_color_hsv(color_get_hue(c_aqua), global.component_saturation, global.component_value);
+	global.bad_color = make_color_hsv(color_get_hue(c_red), global.component_saturation, global.component_value);
+	trigger_grid_update();
+}
+function get_vert_alpha(x_index, y_index){
+	var x1_p = power(x_index,2);
+	var y1_p = power(y_index,2);
+	var maxAlph = global.grid_alpha;
+	//if(global.inBrowser){
+	//	maxAlph *= 2;	
+	//}
+	var alpha = 1 -clamp(((x1_p + y1_p) /global.play_area_radius_sq),0,1);
+	return alpha * maxAlph;
+}
 //LEGACY STUFF SAVED FOR EMERGENCY
 				//if(global.grid_solid){
 				//		var z_4 = global.depth_array[i-1][k-1][2];

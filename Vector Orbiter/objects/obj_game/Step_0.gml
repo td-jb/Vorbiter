@@ -14,7 +14,7 @@ for(var i = array_length(finished_grid_updates)-1; i >=0; i--){
 }log_grid_update_performance_time(current_time - startTime);
 startTime = current_time;
 for(var i = 0; i < array_length(updated_grid_points); i++){
-	var coords = sim_grid_coord_from_index(updated_grid_points[i]);
+	var coords = index_to_sim_grid_coordinate(updated_grid_points[i]);
 	set_grid_point_vertices(coords[0], coords[1]);
 }log_grid_vertex_performance_time(current_time - startTime);
 updated_grid_points = array_create(0);

@@ -1,13 +1,14 @@
 // Script assets have changed for v2.3.0 see
 // https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+
 function simulate_trajectory(start_x, start_y, launch_vector_x, launch_vector_y, x_array, y_array, r_array, m_array){
 	var starttime = current_time;
 	//show_debug_message("Trajectory Preview\nX: " + string(start_x) + "\nY: " + string(start_y) + "\nprojectile: " + string(launch_vector_x) +", " + string(launch_vector_y));
 
 	var projectile = {x_vel: launch_vector_x,
 		y_vel: launch_vector_y,
-		x_pos: start_x,
-		y_pos: start_y,
+		v2x: start_x,
+		v2y: start_y,
 		mult: 1,
 		frameMult: 0,
 		r: global.projectileRadius}
@@ -16,15 +17,15 @@ function simulate_trajectory(start_x, start_y, launch_vector_x, launch_vector_y,
 	for(var k = 0; k <array_length(x_array)*global.trajectorySampleRate; k +=1){
 		projectile.frameMult = 0;
 		increase_projectile_radius(projectile);
-		var dist = apply_gravitational_acceleration(obj_game.level.endpoint,projectile.x_pos,projectile.y_pos,get_projectile_mass(projectile.r),projectile);
+		var dist = apply_gravitational_acceleration(obj_game.level.endpoint,projectile.v2x,projectile.v2y,get_projectile_mass(projectile.r),projectile);
 		apply_flyby_mod(obj_game.level.endpoint, dist,projectile.r, projectile,true);
 		if( collision_check(obj_game.level.endpoint,dist,projectile.r)){
 			
-			projectile.x_pos += (projectile.x_vel/60);
-			projectile.y_pos += (projectile.y_vel /60);
+			projectile.v2x += (projectile.x_vel/60);
+			projectile.v2y += (projectile.y_vel /60);
 			while(k < array_length(x_array)*global.trajectorySampleRate){
-				x_array[floor(k)/global.trajectorySampleRate] = projectile.x_pos;
-				y_array[floor(k)/global.trajectorySampleRate] = projectile.y_pos;
+				x_array[floor(k)/global.trajectorySampleRate] = projectile.v2x;
+				y_array[floor(k)/global.trajectorySampleRate] = projectile.v2y;
 				r_array[floor(k)/global.trajectorySampleRate] =projectile.r;
 				m_array[floor(k)/global.trajectorySampleRate] = projectile.mult;
 				k++;
@@ -34,17 +35,17 @@ function simulate_trajectory(start_x, start_y, launch_vector_x, launch_vector_y,
 		}
 		for(var i= 0; i < array_length(obj_game.level.components); i++){
 			
-			dist = apply_gravitational_acceleration(obj_game.level.components[i], projectile.x_pos,projectile.y_pos,get_projectile_mass(projectile.r),projectile) ;
+			dist = apply_gravitational_acceleration(obj_game.level.components[i], projectile.v2x,projectile.v2y,get_projectile_mass(projectile.r),projectile) ;
 			apply_flyby_mod(obj_game.level.components[i], dist,projectile.r, projectile,true);
-			if( collision_check(obj_game.level.components[i],dist,projectile.r)){
+			if( struct_collision_check(projectile, obj_game.level.components[i])){
 			
-				projectile.x_pos += (projectile.x_vel/60);
-				projectile.y_pos += (projectile.y_vel /60);
+				projectile.v2x += (projectile.x_vel/60);
+				projectile.v2y += (projectile.y_vel /60);
 				while(k < array_length(x_array)*global.trajectorySampleRate){
 					
 				
-					x_array[floor(k)/global.trajectorySampleRate] = projectile.x_pos;
-					y_array[floor(k)/global.trajectorySampleRate] = projectile.y_pos;
+					x_array[floor(k)/global.trajectorySampleRate] = projectile.v2x;
+					y_array[floor(k)/global.trajectorySampleRate] = projectile.v2y;
 					r_array[floor(k)/global.trajectorySampleRate] =projectile.r;
 					m_array[floor(k)/global.trajectorySampleRate] = projectile.mult;
 					k++;
@@ -53,19 +54,22 @@ function simulate_trajectory(start_x, start_y, launch_vector_x, launch_vector_y,
 		
 			}
 		}
-		projectile.x_pos += (projectile.x_vel/60);
-		projectile.y_pos += (projectile.y_vel/60);
-		x_array[floor(k)/global.trajectorySampleRate] = projectile.x_pos;
-		y_array[floor(k)/global.trajectorySampleRate] = projectile.y_pos;
+		projectile.v2x += (projectile.x_vel/60);
+		projectile.v2y += (projectile.y_vel/60);
+		x_array[floor(k)/global.trajectorySampleRate] = projectile.v2x;
+		y_array[floor(k)/global.trajectorySampleRate] = projectile.v2y;
 		r_array[floor(k)/global.trajectorySampleRate] =projectile.r;
 		m_array[floor(k)/global.trajectorySampleRate] = projectile.mult;
 	}
 	log_trajectory_performance_time( current_time - starttime);
 }
 function apply_gravitational_acceleration(obj_struct, subj_x, subj_y, subj_mass, subj_projectile){
+	
 	var end_dist_x = ( obj_struct.v2x - subj_x);
 	var end_dist_y = (obj_struct.v2y - subj_y);
 	var dist =get_square_distance(obj_struct, subj_x, subj_y);
+	if(dist == 0)
+		return dist;
 	var ratio = get_gravitational_force(obj_struct, dist, subj_mass);
 	var truedist = sqrt(dist);
 	var x_ratio = end_dist_x/truedist;
@@ -76,12 +80,18 @@ function apply_gravitational_acceleration(obj_struct, subj_x, subj_y, subj_mass,
 	
 }
 function increase_projectile_radius(_projectile){
-	
-	_projectile.r += ((2/(60) * (0.1*_projectile.r))* global.simRate);
-	
+	var modifier = ((2/(60) * (0.1*_projectile.r))* global.simRate);
+	if(global.boost || global.brake){
+		if(_projectile.r > global.projectileRadius)
+			_projectile.r -= modifier;
+		
+	}else{
+		_projectile.r += modifier;
+	}
 }
 function apply_flyby_mod(obj_struct, dist, projectile_radius, vel, preview = false){
-	
+	if(obj_struct.name == "square")
+		return;
 	var obj_rad = (obj_struct.dr);
 	var mult_halo = obj_rad * global.multiplierRadiusMod;
 	var max_rad = obj_rad + mult_halo + projectile_radius;
@@ -101,7 +111,7 @@ function apply_flyby_mod(obj_struct, dist, projectile_radius, vel, preview = fal
 		if(!array_contains(hit_list,obj_struct._id )){
 			array_push(hit_list,obj_struct._id);
 		}
-		
+			var prevMult = vel.mult;
 			vel.frameMult ++;	
 			vel.mult += global.multiplierRate*vel.frameMult*array_length(hit_list) * ratio;
 			var boostlimiter =500;
@@ -119,25 +129,185 @@ function apply_flyby_mod(obj_struct, dist, projectile_radius, vel, preview = fal
 			vel.x_vel	+=  x_vel_mod
 			vel.y_vel	+= y_vel_mod
 		if(!preview){
-			
-			
 			multiTimer = multiLifespan;
 			multi_x = x;
 			multi_y = y;
-			
+			obj_game.total_multiplier += global.multiplierRate*vel.frameMult*array_length(hit_list) * ratio;	
 		}else{
 		}
 		
 	}
 }
+function apply_special_abilities(_projectile){
+	
+	if(global.boost && projectile.r > global.projectileRadius){
+		projectile.x_vel += projectile.x_vel * global.boostMod;	
+		projectile.y_vel += projectile.y_vel * global.boostMod;	
+	
+	}else if(global.brake&& projectile.r > global.projectileRadius){
+		projectile.x_vel -= projectile.x_vel * global.brakeMod;	
+		projectile.y_vel -= projectile.y_vel * global.brakeMod;	
+	}
+}
 
+function log_projectile_trail(){
+	if(frame % global.trail_sample_rate == 0){
+		for(var i =array_length(x_trail) -1; i > 0; i--){
+
+			x_trail[i] = x_trail[i-1];
+			y_trail[i] = y_trail[i-1];
+	
+		}
+		x_trail[0] = x;
+		y_trail[0] = y;
+	}
+}
+
+function projectile_boundary_check(_projectile){
+	var distSquare = power( x , 2)+ power(y,2) - power(_projectile.r,2);
+	var compareSquare = global.play_area_radius_sq;
+	var startDist = power(get_struct_x_position(obj_game.level.start) - x, 2) + power(get_struct_y_position(obj_game.level.start) - y, 2);
+	var startComp = power(obj_game.level.start.r + _projectile.r, 2);
+	if(!dead && (distSquare >= compareSquare || (startDist < startComp && current_time - create_time > invincibility))){
+
+		if( bounceSound == noone || !audio_is_playing(bounceSound))
+			bounceSound = audio_play_sound(Bounce,0,false,0.5);
+		var pitch = floor(random_range(1,4.5))
+		if((startDist < startComp && current_time - create_time > invincibility)){
+			pitch = pitch/4;
+			if(instance_exists(bounceSound))
+				audio_sound_pitch(bounceSound, pitch);
+			var mass = get_projectile_mass(_projectile.r);
+			obj_game.level.start.d_x += (_projectile.r/2* _projectile.x_vel/global.minFrameRate);
+			obj_game.level.start.d_y += (_projectile.r/2*_projectile.y_vel/global.minFrameRate);
+			_projectile.x_vel = (-_projectile.x_vel * random_range(0.9,1.2));
+			_projectile.y_vel = (-_projectile.y_vel * random_range(0.9,1.2));
+			var newX = get_struct_x_position(obj_game.level.start);
+			var newY = get_struct_y_position(obj_game.level.start)
+			var compCheck = false;
+			update_trajectory_preview();
+			for(var i = 0; i < array_length( obj_game.level.components); i++){
+				if(collision_check(obj_game.level.components[i],get_square_distance(obj_game.level.components[i], newX, newY),obj_game.level.start.r)){
+						compCheck = true;
+						break;
+				}
+				
+			}
+			if(power( newX,2)+power(newY,2)>global.play_area_radius_sq
+			|| collision_check(obj_game.level.endpoint,get_square_distance(obj_game.level.endpoint,newX, newY), obj_game.level.start.r)||
+			compCheck){
+				trigger_reset();
+			}else{
+			
+			
+				obj_game.cursor_x =  newX + obj_game.launch_vector_x;
+				obj_game.cursor_y =  newY + obj_game.launch_vector_y;	
+			}
+			alarm[0] = fps/4;
+			dead = true;
+			
+		}else{
+			obj_game.stopTimer = 60;
+			//if(instance_exists(bounceSound))
+			//audio_sound_pitch(bounceSound, pitch);
+			//projectile.x_vel = (-projectile.x_vel * random_range(0.9,1.2));
+			//projectile.y_vel = (-projectile.y_vel * random_range(0.9,1.2));
+			instance_destroy();
+		}
+		
+		log_projectile_performance_time(current_time-startTime);
+		return;
+	}
+}
+
+function apply_projectile_velocity(_projectile){
+	
+	projectile.v2x += (projectile.x_vel * global.simRate/60);
+	projectile.v2y += (projectile.y_vel * global.simRate/60);
+	x = projectile.v2x;
+	y = projectile.v2y;
+}
+function set_projectile_engine_sound(_dist){
+	var enginePitch = (global.play_area_radius_sq/(_dist))/2;
+	if(global.brake || global.boost){
+		enginePitch *= 0.25;	
+	}
+	if((engineSound) != noone){
+		audio_sound_pitch(engineSound,enginePitch);
+	}
+	else{
+		if(global.liveProjectiles < 150){
+			engineSound = audio_play_sound(Engine,global.liveProjectiles,true, 0.5);
+		}
+	}	
+}
+
+function apply_projectile_struct_interaction(_projectile, _obj_struct, startTime){
+	var dist =apply_gravitational_acceleration(_obj_struct , projectile.v2x, projectile.v2y,get_projectile_mass(projectile.r), projectile);
+	apply_flyby_mod(_obj_struct,dist,projectile.r, projectile);
+
+	if(struct_collision_check(_projectile, _obj_struct) ){
+		add_damage( _obj_struct , get_projectile_damage(projectile));
+		
+		if(struct_exists(_obj_struct, "tr")){
+			if(_obj_struct .r > _obj_struct .tr){
+				audio_emitter_pitch(obj_game.endEmitter, obj_game.pulseRate);
+				update_trajectory_preview();
+			}else{
+				audio_sound_pitch(obj_game.endSound, 1);
+			}
+			var goodSound =  audio_play_sound(GoodSound, 0, false, 0.5);
+			projectile.color = color_get_hue(global.good_color);
+			points =   pi *(power(projectile.r, 2) * power(projectile.mult,2));
+			//var pitch = 1/log10(points/10000);
+			//audio_sound_pitch(goodSound, pitch);
+			add_points(points);
+		}else if(_obj_struct.name !="square"){
+			projectile.color = global.neutral_hue;
+			audio_play_sound(BadSound, 0, false, 0.5);
+			var endDistSquare = power(get_struct_x_position( _obj_struct) - get_struct_x_position( obj_game.level.endpoint), 2) + power(get_struct_y_position( _obj_struct)- get_struct_y_position( obj_game.level.endpoint), 2);
+			var startDistSq = power(_obj_struct.v2x - get_struct_x_position( obj_game.level.start), 2) + power(_obj_struct.v2y -get_struct_y_position( obj_game.level.start), 2);
+			var radSquare = power(obj_game.level.endpoint.r - obj_game.level.endpoint.damage + _obj_struct.r +_obj_struct.damage, 2)
+			var startRadSquare = power(obj_game.level.start.r + _obj_struct.r + _obj_struct.damage, 2)
+			update_trajectory_preview();
+			instance_destroy();
+			if(radSquare > endDistSquare || startRadSquare >= startDistSq){
+				trigger_reset();
+			}		
+		}else if(_obj_struct.name == "square"){
+			if(current_time - create_time > invincibility){
+				var start_id = _obj_struct._id;
+				for(var i = 0; i < array_length( obj_game.level.components); i++){
+					if(obj_game.level.components[i]._id != start_id && obj_game.level.components[i].name == "square"){
+						projectile.v2x = obj_game.level.components[i].v2x;
+						projectile.v2y = obj_game.level.components[i].v2y;
+						create_time = current_time;
+					}
+				}
+			}
+		}
+		if(_obj_struct.name != "square"){
+			instance_destroy();
+			log_projectile_performance_time(current_time-startTime);
+			return -1;
+		}
+	}
+	return dist;
+}
 function get_projectile_mass(radius){
 	return(radius) + global.projectileMassFactor;
 }
+
+function get_struct_square_distance(obj_struct, subj_struct){
+	return get_square_distance(obj_struct, get_struct_x_position(subj_struct), get_struct_y_position(subj_struct));	
+}
 function get_square_distance(obj_struct, subj_x, subj_y){
+	return square_distance_function(subj_x, subj_y, get_struct_x_position(obj_struct), get_struct_y_position(obj_struct));
+}
+function square_distance_function(subj_x, subj_y, obj_x, obj_y){
 	
-	var end_dist_x = (obj_struct.v2x - subj_x);
-	var end_dist_y = (obj_struct.v2y - subj_y);
+	var end_dist_x = (obj_x - subj_x);
+	var end_dist_y = (obj_y - subj_y);
 	return (power(end_dist_x,2) + power(end_dist_y,2));
 }
 function get_actual_radius(obj_struct){
@@ -152,27 +322,83 @@ function get_actual_radius(obj_struct){
 	}
 	
 }
-function collision_check(obj_struct, dist, subj_r){
+function struct_collision_check(subj_struct, obj_struct){
+	var subj_r = subj_struct.r;
+	if(obj_struct.name != "square"){
+		if(struct_exists(subj_struct,"dr")){
+			subj_r = subj_struct.dr;	
+		}
+		var obj_r = obj_struct.r;
 	
-	var true_r =  (obj_struct.dr);
-	return (dist < power( true_r + subj_r,2));
+		if(struct_exists(obj_struct, "dr")){
+			obj_r = obj_struct.dr;	
+		}
+		var dist = get_struct_square_distance(subj_struct, obj_struct);
+		return circle_collision_function( dist, obj_r, subj_r);
+	}else{
+		var dist_sq = get_struct_square_distance(subj_struct, obj_struct);
+		var comp_sq = power(subj_r + obj_struct.r,2);
+		if(dist_sq <= comp_sq){
+			var x_diff = get_struct_x_position(obj_struct) - get_struct_x_position(subj_struct);
+			var y_diff = get_struct_y_position(obj_struct) - get_struct_y_position(subj_struct);
+			var true_dist = sqrt(dist_sq);
+			//var sin_x =  x_diff/true_dist;
+			//var cos_x = y_diff/true_dist;
+			var circ_x = get_struct_x_position(subj_struct)
+			//+  sin_x * subj_r;
+			var circ_y = get_struct_y_position(subj_struct)
+			//+ cos_x * subj_r;
+			var sq_verts = [obj_struct.v2x - obj_struct.r, obj_struct.v2y - obj_struct.r, obj_struct.v2x + obj_struct.r, obj_struct.v2y + obj_struct.r];
+			if(circ_x > sq_verts[0] && circ_x < sq_verts[2] && circ_y > sq_verts[1] && circ_y < sq_verts[3]){
+				return true;	
+			}else
+			{
+				return false;	
+			}
+		}else
+		{
+			return false;	
+		}
+	}
+}
+function boundary_collision_check(subj_struct, overlap = false){
+	var modifier = 1;
+	if(overlap)
+		modifier = -1;
+	var r = get_actual_radius(subj_struct) * modifier;
+	var dist = power(get_struct_x_position(subj_struct) + get_struct_y_position + r, 2 );	
+    return dist > global.play_area_radius_sq;
+}
+function collision_check(obj_struct, dist, subj_r){
+	if(struct_exists(obj_struct,"dr")){
+		var true_r =  (obj_struct.dr);
+		return circle_collision_function(dist, true_r, subj_r);
+	}
+	return false;
+}
+function circle_collision_function(dist, obj_r, subj_r){
+	return (dist < power( obj_r + subj_r,2));
 }
 function get_component_mass(obj_struct){
+	if(obj_struct.name == "square")
+		return 0;
 	return power( (obj_struct.dr),2);
-	
 }
+
+function gravity_function(m_1, m_2, d_squared){
+	return 	(m_1* m_2 *global.gravitation)/d_squared;
+}
+
 function get_gravitational_force(obj_struct, subj_dist, subj_mass){
 	if(struct_exists(obj_struct,"v2x") &&struct_exists(obj_struct,"v2y")&&struct_exists(obj_struct,"r")&&struct_exists(obj_struct,"damage")){
+		
 		var grav = global.simRate * gravity_function(subj_mass,(obj_struct.mass), subj_dist);
 		return grav;
 	}
 	return 0;
 }
 
-function gravity_function(m_1, m_2, d_squared){
-	return 	(m_1* m_2 *global.gravitation)/d_squared;
-}
-function modify_struct_gravitational_field(delta_mass, d_squared){
+function get_gravitational_force_change(delta_mass, d_squared){
 	var delta_force = gravity_function(delta_mass, global.grid_mass, d_squared);
 	return delta_force;
 }
@@ -195,8 +421,6 @@ function get_gravitational_force_at_point(subj_x, subj_y, subj_mass = 1, _level 
 	}
 	return ratio;
 }
-
-
 function get_total_gravitational_acceleration(subj_x, subj_y, subj_mass = 1){
 	var starttime = current_time;
 	var ratio = 0;
@@ -269,20 +493,32 @@ function get_total_gravitational_acceleration(subj_x, subj_y, subj_mass = 1){
 	return_array[1] = y_vel;
 	return return_array;
 }
-function world_coordinate_to_sim_grid_index(x_pos, y_pos){
+#region coordinate translation functions
+function world_coordinate_to_sim_grid_coordinate(x_pos, y_pos){
 	var index_x = 	(x_pos + global.play_area_radius)/global.sim_grid_size;
 	var index_y = 	(y_pos + global.play_area_radius)/global.sim_grid_size;
 	return [index_x, index_y];
 }
-function sim_grid_index_to_world_coordinate(index_x, index_y){
+function sim_grid_coordinate_to_world_coordinate(index_x, index_y){
 	var x_pos = (index_x * global.sim_grid_size)-global.play_area_radius;
 	var y_pos = (index_y * global.sim_grid_size)-global.play_area_radius;
 	return [x_pos, y_pos];
 }
+function sim_grid_coordinate_to_index(coord){
+	return coord[0]* global.sim_grid_count + coord[1];
+}
+function index_to_sim_grid_coordinate(i){
+	var x_coord = floor(i/global.sim_grid_count);
+	var y_coord = int64(i%global.sim_grid_count);
+	return [x_coord, y_coord];
+	
+}
+#endregion
+
 function get_gravity_depth_at_coordinate(x_pos, y_pos, radius = 0){
 	if(!global.objectDepth)
 		return depth;
-	var indices = world_coordinate_to_sim_grid_index(x_pos, y_pos);
+	var indices = world_coordinate_to_sim_grid_coordinate(x_pos, y_pos);
 	var index_x = 	indices[0];
 	var index_y = 	indices[1];
 	radius = radius/global.sim_grid_size;
@@ -314,6 +550,8 @@ function get_gravity_depth_at_coordinate(x_pos, y_pos, radius = 0){
 	var x_grav = lerp(x_grav_1,x_grav_2,y_lerp);
 	return (	y_grav + x_grav)/2;
 }
+
+
 
 function init_sim_grid(){
 	
@@ -477,7 +715,7 @@ function async_spiral_sim_grid_update(grid_struct){
 	var temp_curr_n = grid_struct.n;
 	var temp_curr_n_index = grid_struct.n_index;
 	var temp_modifier = grid_struct.modifier;
-	var coordinates = sim_grid_index_to_world_coordinate(grid_struct.start_x, grid_struct.start_y);
+	var coordinates = sim_grid_coordinate_to_world_coordinate(grid_struct.start_x, grid_struct.start_y);
 	var panic_button = 0;
 	var panic_limit = grid_struct.count* 2;
 	
@@ -595,7 +833,7 @@ function async_spiral_sim_grid_update(grid_struct){
 			else{
 				//global.depth_array[@temp_curr_x][@temp_curr_y][@2] += 150;
 				
-				var gravMod = modify_struct_gravitational_field(grid_struct.delta_m, square_dist_from_coord_pair(coordinates, global.depth_array[@temp_curr_x][@temp_curr_y]));
+				var gravMod = get_gravitational_force_change(grid_struct.delta_m, square_dist_from_coord_pair(coordinates, global.depth_array[@temp_curr_x][@temp_curr_y]));
 				if(abs(gravMod)< 0.1){	
 					show_debug_message("ending spiral update due to insignificant force: " + string(gravMod));
 					grid_struct.finished = true;
@@ -608,7 +846,7 @@ function async_spiral_sim_grid_update(grid_struct){
 				 obj_game.debug_x= global.depth_array[@temp_curr_x][@temp_curr_y][0];
 				 obj_game.debug_y =  global.depth_array[@temp_curr_x][@temp_curr_y][1];
 			}
-			var coord_index = sim_grid_index_from_coord([temp_curr_x, temp_curr_y]);
+			var coord_index = sim_grid_coordinate_to_index([temp_curr_x, temp_curr_y]);
 			if(global.fullGrid && !array_contains(obj_game.updated_grid_points, coord_index ))
 				array_push( obj_game.updated_grid_points, coord_index);
 
@@ -621,7 +859,7 @@ function async_spiral_sim_grid_update(grid_struct){
 			
 			global.depth_array[@temp_curr_x][@temp_curr_y][@2] = get_full_z_depth(global.depth_array[@temp_curr_x][@temp_curr_y][0],global.depth_array[@temp_curr_x][@temp_curr_y][1],global.grid_mass);
 		
-			var coord_index = sim_grid_index_from_coord([temp_curr_x, temp_curr_y]);
+			var coord_index = sim_grid_coordinate_to_index([temp_curr_x, temp_curr_y]);
 			if(global.fullGrid && !array_contains(obj_game.updated_grid_points, coord_index ))
 				array_push( obj_game.updated_grid_points, coord_index);
 			update_count++;
@@ -631,45 +869,6 @@ function async_spiral_sim_grid_update(grid_struct){
 		temp_curr_n++;
 		temp_modifier *= -1;
 	}
-}
-function ai_player(){
-	if(current_time > lastShot+shotDelay){
-		var baseXVector = -(level.endpoint.v2x-level.start.v2x)/2;
-		var baseYVector = (level.endpoint.v2y-level.start.v2y)/2;
-		for(var i = 0; i <array_length(level.components); i++){
-			baseXVector -= 	(level.components[i].v2x-level.start.v2x)/array_length(level.components)* (level.components[i].r+level.components[i].damage)/100;	
-			baseYVector += 	(level.components[i].v2y-level.start.v2y)/array_length(level.components) * (level.components[i].r+level.components[i].damage)/100;
-		}
-		cursor_x = level.start.v2x + launch_vector_x;
-		cursor_y = level.start.v2y + launch_vector_y;
-		if(launch_vector_x == 0)
-			launch_vector_x =  /*random_range(.2, .4)*/-.75 *baseXVector
-		if(launch_vector_y == 0)
-			launch_vector_y = 0
-			//baseYVector*.75
-					
-		simulate_trajectory(level.start.v2x, level.start.v2y, launch_vector_x, launch_vector_y,shot_preview_x, shot_preview_y, shot_preview_r, shot_preview_mult);
-		create_projectile(level.start.v2x, level.start.v2y, launch_vector_x, launch_vector_y);	
-		simShotCount++;
-			if(simShotCount>7){
-				simShotCount = 0;
-				launch_vector_x =  random_range(.2, .4) *baseXVector
-				launch_vector_y = random_range(.2, .4) *baseYVector
-				lastShot = current_time+4000;
-			}else{
-				lastShot = current_time;
-			}
-		}	
-}
-function sim_grid_coord_from_index(i){
-	var x_coord = floor(i/global.sim_grid_count);
-	var y_coord = int64(i%global.sim_grid_count);
-	return [x_coord, y_coord];
-	
-}
-function sim_grid_index_from_coord(coord){
-	return coord[0]* global.sim_grid_count + coord[1];
-	
 }
 
 ////LEGACY FUNCTIONS FOR INSURANCE
@@ -723,7 +922,7 @@ function sim_grid_index_from_coord(coord){
 //				global.depth_array[i][k][2] += edgDist;
 //			}else{
 //				var dist =  power(global.depth_array[@i][@k][@0]-obj_game.grid_update_deltas[0],2) +  power(global.depth_array[@i][@k][@1]-obj_game.grid_update_deltas[1],2)
-//				global.depth_array[@i][@k][@2] += modify_struct_gravitational_field(obj_game.grid_update_deltas[2], dist);
+//				global.depth_array[@i][@k][@2] += get_gravitational_force_change(obj_game.grid_update_deltas[2], dist);
 				
 //			}
 //			if(global.gridDebugMessages){

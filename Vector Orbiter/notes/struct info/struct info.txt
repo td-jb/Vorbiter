@@ -40,6 +40,13 @@ circle
 	mass: the current mass, based on the current radius, stored to prevent redundant calculations
 	name: name for identification purposes
 }
+square
+{
+	v2x: the x cooordinate of the square's midpoint
+	v2y: the y coordinate of the square's midpoint
+	w: the square's width
+
+}
 
 projectile
 {

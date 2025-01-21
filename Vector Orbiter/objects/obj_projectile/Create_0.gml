@@ -9,8 +9,17 @@ multiLifespan = 60;
 multi_x = 0;
 multi_y = 0;
 frame = 0;
-if(global.liveProjectiles < 150)
+startTime = current_time
+if(global.liveProjectiles < 150){
 	engineSound = audio_play_sound(Engine,global.liveProjectiles,true);
+	//if(global.liveProjectiles%2 == 0)
+	//multiplierSound = audio_play_sound(multiplier_1, global.liveProjectiles, true,  1, audio_sound_get_track_position(obj_game.endSound));
+	//else
+	//	multiplierSound = audio_play_sound(multiplier, global.liveProjectiles, true,  1, audio_sound_get_track_position(obj_game.endSound));
+	
+		//audio_sound_pitch(multiplierSound, obj_game.pulseRate);
+		//audio_sound_gain(multiplierSound,0,0.05);
+}
 
 x_trail = array_create(global.trail_length);
 y_trail = array_create(global.trail_length);
@@ -25,3 +34,4 @@ points = 0;
 invincibility = 2000;
 hit_list = array_create(0);
 bounceSound = noone;
+projectile = noone;

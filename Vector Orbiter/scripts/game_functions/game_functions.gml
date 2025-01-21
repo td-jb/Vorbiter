@@ -1,6 +1,16 @@
 // Script assets have changed for v2.3.0 see
 // https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
-
+function update_trajectory_preview(){
+	simulate_trajectory(get_struct_x_position(obj_game.level.start), 
+						get_struct_y_position(obj_game.level.start), 
+						obj_game.launch_vector_x, 
+						obj_game.launch_vector_y,
+						obj_game.shot_preview_x, 
+						obj_game.shot_preview_y, 
+						obj_game.shot_preview_r, 
+						obj_game.shot_preview_mult)
+	
+}
 function add_points(points){
 	if(room != game_room)
 		return;
@@ -75,6 +85,30 @@ function level_end_check(){
 	}
 	return false;
 }
+function level_end_update(){
+	cosPulse = cos(pi * pulseFactor);
+	if(levelComplete || reset){
+		var otFactor = power((obj_game.overtime/15),2);
+		cosPulse += otFactor;
+	
+		audio_emitter_pitch(obj_game.endEmitter, obj_game.pulseRate);
+		if(cosPulse + level.endpoint.r > room_width*3)
+		{
+			pulseRate = 1;
+			if(!reset){
+				change_level();
+				if(room == game_room){
+					postGame = true;	
+				}
+			}else{
+				reset = false;	
+				audio_emitter_pitch(obj_game.endEmitter, obj_game.pulseRate);
+				restart_level();
+			}
+			return;
+		}
+	}
+}
 function add_high_score(level_index, _score){
 	
 	if(_score > global.playerData.highscores[@level_index][9]){
@@ -119,30 +153,7 @@ function end_postgame(){
 	
 	return;	
 }
-function level_end_update(){
-	cosPulse = cos(pi * pulseFactor);
-	if(levelComplete || reset){
-		var otFactor = power((obj_game.overtime/15),2);
-		cosPulse += otFactor;
-	
-		audio_sound_pitch(obj_game.endSound, obj_game.pulseRate);
-		if(cosPulse + level.endpoint.r > room_width*3)
-		{
-			pulseRate = 1;
-			if(!reset){
-				change_level();
-				if(room == game_room){
-					postGame = true;	
-				}
-			}else{
-				reset = false;	
-				audio_sound_pitch(obj_game.endSound, obj_game.pulseRate);
-				restart_level();
-			}
-			return;
-		}
-	}
-}
+
 function change_level(inc = 1){
 	
 	if(global.currentLevel + inc >= array_length(global.levels.array) || global.currentLevel + inc < 0){
@@ -163,7 +174,7 @@ function change_level(inc = 1){
 		obj_game.spiral_grid_updates= array_create(0);
 		obj_game.grid_updates= array_create(0);
 		trigger_grid_update(level)
-		audio_sound_pitch(obj_game.endSound, obj_game.pulseRate);
+		audio_emitter_pitch(obj_game.endEmitter, obj_game.pulseRate);
 		simShotCount = 0;
 				
 	}
@@ -198,6 +209,8 @@ function level_init(level_struct){
 		
 	}
 	obj_game.level = level_struct;
+	obj_game.cursor_x = camera_get_view_x(global.camera) +  camera_get_view_width(global.camera)/2
+	obj_game.cursor_y = camera_get_view_y(global.camera) +  camera_get_view_height(global.camera)/2
 	
 }
 function increment_game_timers(){
@@ -210,6 +223,103 @@ function increment_game_timers(){
 	minScale = lerp(minScale, targetMinScale, 4/fps);
 	room_frame++;
 }
+function wipe_maximums(){
+	global.maxTrajectoryTime = 0
+	global.maxDrawTime = 0;
+	global.maxGridUpdateTime = 0;
+	global.maxProjectileTime =0
+	global.maxSumTime = 0;
+	global.maxVertexTime = 0;
+	
+}
+
+function register_previous_grid_details(){
+	
+	prev_grid_x_count = grid_x_count;
+	prev_grid_y_count = grid_y_count;
+	prev_grid_x_offset = grid_x_offset;
+	prev_grid_y_offset = grid_y_offset;
+	prev_grid_thickness = global.grid_thickness;
+	
+}
+function get_projectile_damage(projectile){
+	return floor(projectile.r/10);	
+}
+function add_damage(obj_struct, _damage_increment){
+	if(struct_exists(obj_struct, "damage") && obj_struct.name != "square"){
+		set_damage(obj_struct, obj_struct.damage + _damage_increment);
+	}
+	
+}
+
+function set_damage(obj_struct,_damage){
+	if(struct_exists(obj_struct, "damage")){
+		obj_struct.damage = _damage;
+		//if(!struct_exists(obj_struct, "prevMass") || obj_struct.prevMass == 0){
+		//	struct_set(obj_struct,"prevMass",obj.mass);	
+		//}
+		var prevMass = obj_struct.mass;
+		obj_struct.dr = get_actual_radius(obj_struct);
+		obj_struct.mass = get_component_mass(obj_struct);
+		var sim_coords = world_coordinate_to_sim_grid_coordinate(obj_struct.v2x, obj_struct.v2y);
+		trigger_grid_update(obj_game.level, sim_coords[0],sim_coords[1],obj_struct.mass-prevMass);
+		//trigger_grid_update();
+	}
+}
+function reset_struct(obj_struct){
+	if(struct_exists(obj_struct, "damage") && obj_struct.damage != 0)
+		set_damage(obj_struct, 0);
+	struct_set(obj_struct, "d_x", 0)
+	struct_set(obj_struct, "d_y", 0)
+	struct_set(obj_struct, "x_vel", 0)
+	struct_set(obj_struct, "y_vel", 0)
+	if(obj_struct.name != "square"){
+		struct_set(obj_struct,"dr",get_actual_radius(obj_struct));
+		struct_set(obj_struct,"mass", get_component_mass(obj_struct));
+	}
+}
+function get_struct_x_position(obj_struct){
+	if(struct_exists(obj_struct, "d_x")){
+		return obj_struct.v2x + obj_struct.d_x;	
+	}
+	return obj_struct.v2x;
+}
+function get_struct_y_position(obj_struct){
+	
+	if(struct_exists(obj_struct, "d_y")){
+		return obj_struct.v2y + obj_struct.d_y;	
+	}
+	return obj_struct.v2y;
+}
+function create_projectile(_x, _y, _x_vel, _y_vel){
+	var projectile = instance_create_layer(_x, _y,"Instances", obj_projectile);
+	var start_x = _x ;
+	var start_y = _y ;
+	projectile.x = start_x;
+	projectile.y = start_y;
+	projectile.projectile = create_projectile_struct(start_x, start_y, _x_vel, _y_vel);
+	obj_game.last_shot_position[0] = _x+_x_vel;
+	obj_game.last_shot_position[1] = _y+_y_vel;
+	global.projectileCount++;
+	global.liveProjectiles++;
+}
+function create_projectile_struct(_x, _y, _x_vel, _y_vel){
+	var newProjectile =  {
+		name: "projectile",
+		x_vel:_x_vel,
+		y_vel:_y_vel,
+		v2x: _x,
+		v2y: _y,
+		r: global.projectileRadius,
+		mult: 1,
+		frameMult: 0,
+		color: color_get_hue( global.projectile_color),
+		_id: global.projectileCount
+	}
+	return newProjectile;
+}
+
+
 function set_cursor_type(){
 	
 //if(!window_has_focus()){
@@ -242,80 +352,6 @@ function set_cursor_position(){
 	cursor_x = clamp(cursor_x, -global.play_area_radius, global.play_area_radius);
 	cursor_y = clamp(cursor_y, -global.play_area_radius, global.play_area_radius);
 }
-function register_previous_grid_details(){
-	
-	prev_grid_x_count = grid_x_count;
-	prev_grid_y_count = grid_y_count;
-	prev_grid_x_offset = grid_x_offset;
-	prev_grid_y_offset = grid_y_offset;
-	prev_grid_thickness = global.grid_thickness;
-	
-}
-function get_projectile_damage(projectile){
-	return floor(projectile.r/10);	
-}
-function add_damage(obj_struct, _damage_increment){
-	if(struct_exists(obj_struct, "damage")){
-		set_damage(obj_struct, obj_struct.damage + _damage_increment);
-	}
-	
-}
-
-function set_damage(obj_struct,_damage){
-	if(struct_exists(obj_struct, "damage")){
-		obj_struct.damage = _damage;
-		//if(!struct_exists(obj_struct, "prevMass") || obj_struct.prevMass == 0){
-		//	struct_set(obj_struct,"prevMass",obj.mass);	
-		//}
-		var prevMass = obj_struct.mass;
-		obj_struct.dr = get_actual_radius(obj_struct);
-		obj_struct.mass = get_component_mass(obj_struct);
-		var sim_coords = world_coordinate_to_sim_grid_index(obj_struct.v2x, obj_struct.v2y);
-		trigger_grid_update(obj_game.level, sim_coords[0],sim_coords[1],obj_struct.mass-prevMass);
-		//trigger_grid_update();
-	}
-}
-function reset_struct(obj_struct){
-	if(struct_exists(obj_struct, "damage") && obj_struct.damage != 0)
-		set_damage(obj_struct, 0);
-	struct_set(obj_struct, "d_x", 0)
-	struct_set(obj_struct, "d_y", 0)
-	struct_set(obj_struct,"dr",get_actual_radius(obj_struct));
-	struct_set(obj_struct,"mass", get_component_mass(obj_struct));
-}
-function get_struct_x_position(obj_struct){
-	if(struct_exists(obj_struct, "d_x")){
-		return obj_struct.v2x + obj_struct.d_x;	
-	}
-	return obj_struct.v2x;
-}
-function get_struct_y_position(obj_struct){
-	
-	if(struct_exists(obj_struct, "d_y")){
-		return obj_struct.v2y + obj_struct.d_y;	
-	}
-	return obj_struct.v2y;
-}
-function create_projectile(_x, _y, _x_vel, _y_vel){
-	var projectile = instance_create_layer(_x, _y,"Instances", obj_projectile);
-	projectile.projectile = create_projectile_struct(_x, _y, _x_vel, _y_vel);
-	global.projectileCount++;
-	global.liveProjectiles++;
-}
-function create_projectile_struct(_x, _y, _x_vel, _y_vel){
-	
-	return {
-		x_vel:_x_vel,
-		y_vel:_y_vel,
-		x_pos: _x,
-		y_pos: _y,
-		r: global.projectileRadius,
-		mult: 1,
-		frameMult: 0,
-		color: color_get_hue( global.projectile_color),
-		_id: global.projectileCount
-	}
-}
 function process_user_inputs(){
 	if(keyboard_check_released(vk_tab)&& os_browser == browser_not_a_browser){
 		global.editMode = !global.editMode;
@@ -325,7 +361,7 @@ function process_user_inputs(){
 		
 	}else if(mouse_wheel_up()){
 			
-		targetMinScale = clamp(targetMinScale -  scrollRate* global.screenScale, 0.5, maxScale);
+	targetMinScale = clamp(targetMinScale -  scrollRate* global.screenScale, 0.5, maxScale);
 		
 	}
 	if(!global.editMode){
@@ -333,6 +369,30 @@ function process_user_inputs(){
 			d_x = d_x/4;
 			d_y = d_y/4;
 			
+		}
+		if(keyboard_check(vk_space)){
+			global.boost = true;
+		}else if(global.boost)
+		{
+			global.boost = false;	
+		}
+		if(keyboard_check(vk_lalt)){
+			global.brake = true;
+		}else if(global.brake)
+		{
+			global.brake = false;	
+		}
+		if(current_time > obj_game.lastShot+shotDelay && keyboard_check(vk_lshift)&& last_shot_position[0] != infinity){
+			cursor_x = last_shot_position[0];
+			cursor_y = last_shot_position[1];
+			shooting = true;
+			mouse_click_start_x = get_struct_x_position(obj_game.level.start);
+			mouse_click_start_y = get_struct_y_position(obj_game.level.start);
+			launch_vector_x = cursor_x-mouse_click_start_x;
+			launch_vector_y = cursor_y-mouse_click_start_y;
+			create_projectile(mouse_click_start_x, mouse_click_start_y, launch_vector_x, launch_vector_y);
+			audio_sound_gain(shootingSound,.7,30);
+			lastShot = current_time;
 		}
 	}
 	if(mouse_check_button_pressed(mb_left)){
@@ -427,8 +487,7 @@ function process_user_inputs(){
 		last_mouse_x = window_mouse_get_x();
 		last_mouse_y = window_mouse_get_y();
 		if(!global.editMode){
-			simulate_trajectory(get_struct_x_position(level.start), get_struct_y_position(level.start), launch_vector_x, launch_vector_y,shot_preview_x, shot_preview_y, shot_preview_r, shot_preview_mult);
-			
+			update_trajectory_preview();
 			if window_mouse_get_x() < 2 || window_mouse_get_x() > window_get_width()-2 || window_mouse_get_y() < 2 || window_mouse_get_y() > window_get_height()-2 {
 			    mouseInWindow = false;
 				show_debug_message("dispRatio: " + string(dispRatio)+" mouse_x: " + string(mouse_x) +  " mouse_y: " + string(mouse_y) );
@@ -486,38 +545,18 @@ function process_user_inputs(){
 						editor_selected_object.v2y = cursor_y;
 					}
 				}
-				//if(editor_selected_object >= 0){
-					
-				//	if(keyboard_check_pressed(vk_control)){
-				//		level.start.r =sqrt((power(launch_vector_x,2) + power(launch_vector_y,2)));
-				//	}else{
-				//		level.start.v2x = cursor_x;	
-				//		level.start.v2y = cursor_y;
-				//	}
-				//}else if (editor_selected_object ==1){
-				//	if(keyboard_check_pressed(vk_control)){
-				//		level.endpoint.r =sqrt((power(launch_vector_x,2) + power(launch_vector_y,2)));
-				//	}else{
-				//		level.endpoint.v2x = cursor_x;	
-				//		level.endpoint.v2y = cursor_y;
-				//	}
-				//}else if(editor_selected_object >1){
-				//	if(keyboard_check_pressed(vk_control)){
-				//		level.components[editor_selected_object - 2].r = sqrt((power(launch_vector_x,2) + power(launch_vector_y,2)));
-				//	}else{
-				//		level.components[editor_selected_object - 2].v2x = cursor_x;
-				//		level.components[editor_selected_object - 2].v2y = cursor_y;
-				//	}
-				//}
 			}
 		}else{
-			shooting = false;
+			if(!keyboard_check(vk_shift)){
+				audio_sound_gain(shootingSound,0,1000);
+				shooting = false;
+			}
 			if(global.editMode){
 				editor_selected_object = noone;	
 				trigger_grid_update();
 			}
 		}
-		if((!mouseInWindow && global.inBrowser) || !mouse_check_button(mb_left)){
+		if((!mouseInWindow && global.inBrowser) ||(!keyboard_check(vk_shift) && !mouse_check_button(mb_left))){
 			audio_sound_gain(shootingSound,0,1000);
 			shooting = false;
 		}
@@ -536,7 +575,37 @@ function process_user_inputs(){
 		last_mouse_x = window_mouse_get_x();
 		last_mouse_y = window_mouse_get_y();
 		if(!global.editMode){
-			simulate_trajectory(get_struct_x_position(obj_game.level.start), get_struct_y_position(obj_game.level.start), launch_vector_x, launch_vector_y,shot_preview_x, shot_preview_y, shot_preview_r, shot_preview_mult);
-		}
+			
+			update_trajectory_preview();
+			}
 	}
+}
+function ai_player(){
+	if(current_time > lastShot+shotDelay){
+		var baseXVector = -(level.endpoint.v2x-level.start.v2x)/2;
+		var baseYVector = (level.endpoint.v2y-level.start.v2y)/2;
+		for(var i = 0; i <array_length(level.components); i++){
+			baseXVector -= 	(level.components[i].v2x-level.start.v2x)/array_length(level.components)* (level.components[i].r+level.components[i].damage)/100;	
+			baseYVector += 	(level.components[i].v2y-level.start.v2y)/array_length(level.components) * (level.components[i].r+level.components[i].damage)/100;
+		}
+		cursor_x = level.start.v2x + launch_vector_x;
+		cursor_y = level.start.v2y + launch_vector_y;
+		if(launch_vector_x == 0)
+			launch_vector_x =  /*random_range(.2, .4)*/-.75 *baseXVector
+		if(launch_vector_y == 0)
+			launch_vector_y = 0
+			//baseYVector*.75
+		
+		update_trajectory_preview();			
+		create_projectile(level.start.v2x, level.start.v2y, launch_vector_x, launch_vector_y);	
+		simShotCount++;
+			if(simShotCount>7){
+				simShotCount = 0;
+				launch_vector_x =  random_range(.2, .4) *baseXVector
+				launch_vector_y = random_range(.2, .4) *baseYVector
+				lastShot = current_time+4000;
+			}else{
+				lastShot = current_time;
+			}
+		}	
 }

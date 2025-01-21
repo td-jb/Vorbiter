@@ -41,12 +41,18 @@ levelComplete = false;
 reset = false;
 completeTime = 0;
 overtime = 0;
+
+room_frame = 0;
 lastShot = current_time;
 room_start = current_time;
 baseShotDelay = 100;
 shotDelay = 100;
-endSound = audio_play_sound(EndDrum,0,true, 0.5);
+//global.syncGroup = audio_create_sync_group(true)
+
+endEmitter = audio_emitter_create();
+endSound = audio_play_sound_on(endEmitter,EndDrum,true,0, 0.5);
 shootingSound = audio_play_sound(_108hzbinaural,0,true, 0);
+
 global.projectileCount = 0;
 global.liveProjectiles = 0;
 simShotCount = 0;
@@ -145,6 +151,8 @@ proj_index = 0;
 mouseInWindow = true;
 debug_x = 0;
 debug_y = 0;
+total_multiplier = 0;
+last_shot_position = array_create(2, infinity);
 if(global.threeD){
 	global.camera = view_camera[0];	
 	camera_set_proj_mat(global.camera,global.projection_matrix);

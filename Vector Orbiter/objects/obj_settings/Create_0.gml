@@ -11,6 +11,8 @@ enum MenuScreen{
 	SCORES
 	
 }
+global.play_area_radius = 1920 * 2.2;
+global.play_area_radius_sq = power(global.play_area_radius,2);
 global.inBrowser =os_browser != browser_not_a_browser;
 global.playerProfile = "Turd Jabroni";
 global.levels = {};
@@ -58,7 +60,7 @@ if(global.threeD){
 }else{
 	global.camera = view_camera[0];	
 }
-audio_play_sound(Endplosion,0,false,0.8);
+audio_play_sound(opening_sound,0,false,0.8);
 
 //global.view_matrix = matrix_multiply(global.view_matrix, translation_matrix);
 //global.view_matrix[5] *= -1;
@@ -111,8 +113,6 @@ global.grid_solid = false;
 global.v_buff = vertex_create_buffer();
 global.u_buff = vertex_create_buffer();
 global.frame_vert_count = 0;
-global.play_area_radius = 1920 * 2.2;
-global.play_area_radius_sq = power(global.play_area_radius,2);
 global.grid_size = global.base_grid_size;
 global.sim_grid_size = global.base_grid_size;
 global.sim_grid_count = (global.play_area_radius * 2)/global.sim_grid_size;
@@ -142,6 +142,10 @@ global.hueMult = 2;
 global.normalizeFlybyBoost = false;
 global.vertCopyRate = false;
 global.grid_update_chunk = 500;
+global.boost = false;
+global.brake = false;
+global.boostMod = 0.01;
+global.brakeMod = 0.01;
 init_sim_grid();
 if(global.inBrowser)
 	show_debug_message("Sim grid initialized");

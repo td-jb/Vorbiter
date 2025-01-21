@@ -7,6 +7,16 @@ function load_levels(){
 	var _string = buffer_read(_buffer, buffer_string);
 	buffer_delete(_buffer);
 	global.levels = json_parse(_string);
+	for(var i = 0; i < array_length(global.levels.array); i++){
+		reset_struct(global.levels.array[i].start);
+		reset_struct(global.levels.array[i].endpoint);
+		for(var k = 0; k < array_length(global.levels.array[i].components); k++){
+			
+			
+			reset_struct(global.levels.array[i].components[k]);
+		}
+		
+	}
 }
 function save_levels(){
 	var save_string = json_stringify(global.levels,true);
@@ -51,19 +61,12 @@ function create_default_player_data(){
 	
 }
 #endregion
+#region string manipulation functions
 function forbidden_string_array(){
 	return ["/","\\","?","*",":","\"","<",">","|"];
 		
 }
-function wipe_maximums(){
-	global.maxTrajectoryTime = 0
-	global.maxDrawTime = 0;
-	global.maxGridUpdateTime = 0;
-	global.maxProjectileTime =0
-	global.maxSumTime = 0;
-	global.maxVertexTime = 0;
-	
-}
+
 function remove_forbidden_characters(stringinput){
 		var outputString = stringinput; 
 		
@@ -211,6 +214,8 @@ function num_separator(argument0, argument1, argument2 = 3){
 		res = string_insert("-",res, 0);
 	return res;
 }
+#endregion
+
 function spiral_algorithm(_array, _function, arg_1= 0, arg_2 = 0){
 	//performs specified function on 2d array in spiral pattern
 	if(!is_array(_array) || !is_array(_array[0])){
@@ -240,6 +245,7 @@ function spiral_algorithm(_array, _function, arg_1= 0, arg_2 = 0){
 		modifier *= -1;
 	}
 }
+#region level editing functions
 function add_default_level(){
 	var level = {};
 	var levelArray = global.levels.array;
@@ -291,6 +297,8 @@ function remove_component_from_level(obj_struct){
 	}
 	
 }
+#endregion
+#region debug functions
 function log_projectile_performance_time(frameTime){
 	if(global.debugMode == DebugMode.PERFORMANCE){
 		global.projectileTimeArray[global.averageFrameSamples-1] += frameTime;
@@ -340,7 +348,8 @@ function log_sum_performance_time(){
 		}
 	}
 }
-
+#endregion
+#region array manipulation functions
 function get_array_average(array){
 	var sum_frametime = 0;
 
@@ -351,7 +360,6 @@ function get_array_average(array){
 	return sum_frametime/array_length(array)
 	
 }
-
 function shift_array(array){
 	if(array_length(array) == 0){
 		return;	
@@ -367,15 +375,9 @@ function shift_array(array){
 	}
 	array[@ (array_length(array)-1)] = 0;
 }
-function reset_colors(){
-	
-	
-	global.bg_color = make_color_hsv(255,global.component_saturation,global.component_value);
-	global.good_color = make_color_hsv(color_get_hue(c_lime), global.component_saturation, global.component_value);
-	global.projectile_color = make_color_hsv(color_get_hue(c_aqua), global.component_saturation, global.component_value);
-	global.bad_color = make_color_hsv(color_get_hue(c_red), global.component_saturation, global.component_value);
-	trigger_grid_update();
-}
+#endregion
+
+
 function generate_trig_tables(){
 	//2*pi/4
 
