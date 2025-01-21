@@ -886,7 +886,7 @@ function draw_end_point(_x, _y, _scale, _level){
 				get_struct_x_position(obj_game.level.endpoint), 
 				get_struct_y_position(obj_game.level.endpoint),
 				(obj_game.level.endpoint.tr + cosPulse)/global.play_area_radius,
-				global.levels.array[min( global.currentLevel + 1, array_length(global.levels.array) - 1)]);
+				global.levels.array[(global.currentLevel + 1)%array_length(global.levels.array)]);
 		if(!levelComplete && !reset){
 			draw_set_color(global.good_color);
 			draw_circle(true_x, true_y ,_level.endpoint.tr * _scale,true);
