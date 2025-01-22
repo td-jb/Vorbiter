@@ -29,7 +29,7 @@ function save_levels(){
 }
 
 function save_player_data(){
-	if(!global.inBrowser){
+	if(!global.Law.inBrowser){
 		var save_string = json_stringify(global.playerData,true);
 		var _buffer = buffer_create(string_byte_length(save_string)+1,buffer_fixed,1);
 		buffer_write(_buffer, buffer_string, save_string);
@@ -39,15 +39,124 @@ function save_player_data(){
 	}
 	
 }
+function create_default_laws(){
+	 return{
+		baseDepth: depth,
+		baseShotDelay: 6,
+		circlePrecision: 2,
+		playRadius: 1920 * 2.2,
+		sqPlayRadius: power(1920 * 2.2,2),
+		gravitation: 1,
+		roundEdge: false,
+		introTimer: 2000,
+		pRadius: 10,
+		pMassFactor: 150,
+		inBrowser: os_browser != browser_not_a_browser,
+		threeD:  os_browser == browser_not_a_browser || webgl_enabled,
+		gridMass: 10000,
+		depthMod: 1,
+		physRate: 60,
+		depthMod: 1,
+		gridVertexFormat: create_vertex_format(),
+		boostMod: 0.01,
+		brakeMod: 0.01,
+		trajectorySampleRate: 4,
+		trajectoryLength: 100,
+		depthAlpha: 20000,
+		multiplierRadiusMod: .45,
+		multiplierRate: 1,
+		hueMult: 2,
+		edgeFalloff: 1000
+	}				
+}
+function create_default_settings_struct(){
+	
+	return 	{
+		masterVolume: {value: 1, type: SettingType.REAL, limits:[0,1], note: "The overall volume of all game sounds." },
+		baseGridSize: {value: 48, type: SettingType.INT, limits:[16,512], name: "Grid Size", note: "The size of each grid cell in the game background. Smaller numbers may decrease performance significantly."},
+		fullGrid: {value: !global.Law.inBrowser, type:SettingType.BOOL, name: "Draw Full Grid", note: "Sets whether the full grid is drawn each frame, or if instead the vertices are redrawn any time the visible portion of the screen changes. Setting this to false reduces GPU strain. Setting it to true reduces CPU strain"},
+		gridScaleFactor: {value: 1, type: SettingType.REAL, limits:[0.5,5], name: "Grid Scaling Rate", note: "Changes the rate at which the grid resizes its cells", req:{struct:"fullGrid", value: false}},
+		gridThickness: {value: 6, 
+						type: SettingType.INT, 
+						limits:[1,16], 
+						name: "Grid Thickness", 
+						note: "Changes the thickness with which the grid is drawn", 
+						req:{struct:"fullGrid", value: false}},
+		gridAlpha: {value: 0.1, type: SettingType.REAL, limits:[0,1], name: "Grid Transparency", note: "The transparency used when drawing the grid." },
+		gridUpdateRate: {value: 500, type: SettingType.INT, limits:[1,36000], name: "Grid Update Rate", note: "How many grid nodes are updated per frame when recalculating gravity wells. Lower values will improve performance."},
+		colorSaturation: {value: 255, type: SettingType.SATURATION, limits:[0,255], name: "Saturation", note: "The base Saturation level." },
+		colorValue:  {value: 255, type: SettingType.VALUE, limits:[0,255], name: "Brightness", note: "The base Brightness." },
+		backgroundHue: {value: 255, type: SettingType.HUE, limits:[0,255], name: "Background Hue", note: "The base hue used for background elements (the launcher ,the grid, exterior bounds)" },
+		projectileHue:  {value: color_get_hue(c_aqua), type: SettingType.HUE, limits:[0,255], note: "The base hue used for projectiles and the level's target point" },
+		badHue: {value:  color_get_hue(c_red), type: SettingType.HUE, limits:[0,255], name: "Bad Hue", note: "The base hue used to indicate bad events" },
+		goodHue:  {value: color_get_hue(c_lime), type: SettingType.HUE, limits:[0,255], name: "Good Hue", note: "The base hue to indicate good events" },
+		neutralHue: {value:  color_get_hue(c_yellow), type: SettingType.HUE, limits:[0,255], name: "Obstacle Hue", note: "The base hue used for drawing obstacles in space-time" },
+		dangerHue: {value: 0.03, type: SettingType.HUE, limits:[0,255], name: "Danger Hue", note: "The hue used to indicate that something dangerous may occur"},
+		trailLength: {value: 25, type: SettingType.INT, limits:[0, 200], name:"Trail Length" , note: "The length of the trail left by the projectiles."},
+		trailDensity: {value: 4, type: SettingType.INT, limits:[1, 10], name:"Trail Density" , note: "The density of the points drawn in projectile trails."},
+		scrollRate: {value: 0.1, type: SettingType.REAL, limits:[0.01,1], name: "Scroll Speed", note: "The speed with which the camera zoom follows the scroll wheel."},
+		scaleRate: {value: 0.1, type: SettingType.REAL, limits:[0.01,1], name: "Camera Speed", note: "The speed with which the camera expands in order to follow projectiles."},
+	}
+}
 function create_blank_game_state(){
 	var new_state = {
-		
+		pulseRate: 1,
+		levelComplete: false,
+		reset: false,
+		status: GameStatus.SIM,
+		completeTime: 0,
+		overtime: 0,
+		roomFrame: 0,
+		lastShot: 0,
+		shotDelay: global.Law.baseShotDelay,
+		roomStart: current_time,
+		levelScore: 0,
+		pulseFactor: 0,
+		cosPulse: 0,
+		editor_selected_object: -1
 	};	
 	return new_state;
 }
-function create_blank_camera_state(){
+function create_blank_graphics_state(){
 	var new_state = {
-		
+		gridCountX: view_wport[0]/global.grid_size,
+		gridCountY: view_hport[0]/global.grid_size,
+		prev_grid_count_y: 0,
+		prev_grid_count_x: 0,
+		prev_grid_thickness: global.Settings.gridThickness.value,
+		grid_x_offset:0,
+		grid_y_offset:0,
+		prev_grid_offset_x:0,
+		prev_grid_offset_y:0,
+		baseWidth: window_get_width(),
+		baseHeight: window_get_height(),
+		currX: 0,
+		currY: 0,
+		targetX: 0,
+		targetY: 0,
+		minWidth: window_get_width(),
+		minHeight: window_get_height(),
+		gridHeight: 0,
+		gridWidth: 0,
+		gridStartX: 0,
+		gridStartY: 0,
+		minProjectileX: 0,
+		maxProjectileX: 0,
+		minProjectileY: 0,
+		maxProjectileY: 0,
+		prevMaxX: 0,
+		prevMaxY: 0,
+		prevMinX: 0,
+		prevMinY: 0,
+		currWidth: 0,
+		currHeight: 0,
+		minScale: 0.5,
+		maxScale: global.Law.playRadius*2/window_get_height(),
+		targetMinScale: 0.5,
+		stopTimer: 0,
+		screenScale: 1,
+		vertBuffer: vertex_create_buffer(),
+		updateBuffer: vertex_create_buffer()
 	};	
 	return new_state;
 }
@@ -63,7 +172,7 @@ function create_blank_input_state(){
 	return new_state;
 }
 function load_player_data(){
-	if(file_exists("player.json") && !global.inBrowser){
+	if(file_exists("player.json") && !global.Law.inBrowser){
 		var _buffer = buffer_load("player.json");
 		var _string = buffer_read(_buffer, buffer_string);
 		buffer_delete(_buffer);
@@ -402,13 +511,13 @@ function shift_array(array){
 	if(array_length(array) == 0){
 		return;	
 	}
-	if(global.inBrowser){
+	if(global.Law.inBrowser){
 		show_debug_message("shift_array line 533");	
 	}
 	for(var i = 0; i < array_length(array)-1;i++){
 		array[@ i] = array[@ (i+1)];
 	}
-	if(global.inBrowser){
+	if(global.Law.inBrowser){
 		show_debug_message("shift_array line 539");	
 	}
 	array[@ (array_length(array)-1)] = 0;

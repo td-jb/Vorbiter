@@ -7,8 +7,8 @@ if(global.debugMode == DebugMode.PERFORMANCE){
 	shift_array(global.gridVertexTimeArray);
 	shift_array(global.trajectoryTimeArray);
 	shift_array(global.drawTimeArray);
-	if(!global.inBrowser)
+	if(!global.Law.inBrowser)
 		shift_array(global.sumTimeArray);
 }
-if(room==game_room && !global.inBrowser)
+if(room==game_room && !global.Law.inBrowser)
 	window_mouse_set(window_get_width()/2,window_get_height()/2);

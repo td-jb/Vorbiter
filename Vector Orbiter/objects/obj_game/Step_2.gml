@@ -6,7 +6,7 @@ if(global.debugMode == DebugMode.PERFORMANCE){
 	global.gridUpdateTime = get_array_average(global.gridUpdateTimeArray)
 	global.gridVertexTime = get_array_average(global.gridVertexTimeArray)
 	global.trajectoryTime = get_array_average(global.trajectoryTimeArray)
-	if(!global.inBrowser){
+	if(!global.Law.inBrowser){
 		global.sumTimeArray = get_array_average(global.sumTimeArray)
 	}
 }

@@ -8,7 +8,7 @@ if(multiTimer>=0){
 frame++;
 projectile.frameMult = 0;
 startTime = current_time;
-if(obj_game.levelComplete || !window_has_focus()){
+if(global.Game.levelComplete || !window_has_focus()){
 	log_projectile_performance_time(current_time-startTime);
 	return;
 }

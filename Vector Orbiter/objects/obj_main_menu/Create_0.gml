@@ -32,8 +32,8 @@ button_height = 40;
 button_margin = 5;
 selected_button = -1;
 
-curs_x =0;
-curs_y = 0;
+cursor_x =0;
+cursor_y = 0;
 button_offset_x = view_wport[0]/2-button_width/2;
 button_offset_y = view_hport[0]/2- (button_height * array_length(buttons))/2;
 

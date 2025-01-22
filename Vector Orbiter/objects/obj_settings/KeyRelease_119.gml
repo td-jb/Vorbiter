@@ -1,14 +1,14 @@
 /// @description Insert description here
 // You can write your code in this editor
-if(global.component_saturation == 255){
-	global.component_saturation = 128;	
+if(global.Settings.colorSaturation.value == 255){
+	global.Settings.colorSaturation.value = 128;	
 	
-}else if(global.component_saturation == 128){
-	global.component_saturation = 0;	
+}else if(global.Settings.colorSaturation.value == 128){
+	global.Settings.colorSaturation.value = 0;	
 	
 }else{
 	
 	
-	global.component_saturation = 255;	
+	global.Settings.colorSaturation.value = 255;	
 }
 reset_colors();

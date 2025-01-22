@@ -3,7 +3,7 @@
 
 function simulate_trajectory(start_x, start_y, launch_vector_x, launch_vector_y, x_array, y_array, r_array, m_array){
 	var starttime = current_time;
-	//show_debug_message("Trajectory Preview\nX: " + string(start_x) + "\nY: " + string(start_y) + "\nprojectile: " + string(i_state.launch_x) +", " + string(i_state.launch_y));
+	//show_debug_message("Trajectory Preview\nX: " + string(start_x) + "\nY: " + string(start_y) + "\nprojectile: " + string(global.Input.launch_x) +", " + string(global.Input.launch_y));
 
 	var projectile = {x_vel: launch_vector_x,
 		y_vel: launch_vector_y,
@@ -11,10 +11,10 @@ function simulate_trajectory(start_x, start_y, launch_vector_x, launch_vector_y,
 		v2y: start_y,
 		mult: 1,
 		frameMult: 0,
-		r: global.projectileRadius}
+		r: global.Law.pRadius}
 	
 	hit_list = [];
-	for(var k = 0; k <array_length(x_array)*global.trajectorySampleRate; k +=1){
+	for(var k = 0; k <array_length(x_array)*global.Law.trajectorySampleRate; k +=1){
 		projectile.frameMult = 0;
 		increase_projectile_radius(projectile);
 		var dist = apply_gravitational_acceleration(obj_game.level.endpoint,projectile.v2x,projectile.v2y,get_projectile_mass(projectile.r),projectile);
@@ -23,11 +23,11 @@ function simulate_trajectory(start_x, start_y, launch_vector_x, launch_vector_y,
 			
 			projectile.v2x += (projectile.x_vel/60);
 			projectile.v2y += (projectile.y_vel /60);
-			while(k < array_length(x_array)*global.trajectorySampleRate){
-				x_array[floor(k)/global.trajectorySampleRate] = projectile.v2x;
-				y_array[floor(k)/global.trajectorySampleRate] = projectile.v2y;
-				r_array[floor(k)/global.trajectorySampleRate] =projectile.r;
-				m_array[floor(k)/global.trajectorySampleRate] = projectile.mult;
+			while(k < array_length(x_array)*global.Law.trajectorySampleRate){
+				x_array[floor(k)/global.Law.trajectorySampleRate] = projectile.v2x;
+				y_array[floor(k)/global.Law.trajectorySampleRate] = projectile.v2y;
+				r_array[floor(k)/global.Law.trajectorySampleRate] = projectile.r;
+				m_array[floor(k)/global.Law.trajectorySampleRate] = projectile.mult;
 				k++;
 			}
 			return;
@@ -41,13 +41,13 @@ function simulate_trajectory(start_x, start_y, launch_vector_x, launch_vector_y,
 			
 				projectile.v2x += (projectile.x_vel/60);
 				projectile.v2y += (projectile.y_vel /60);
-				while(k < array_length(x_array)*global.trajectorySampleRate){
+				while(k < array_length(x_array)*global.Law.trajectorySampleRate){
 					
 				
-					x_array[floor(k)/global.trajectorySampleRate] = projectile.v2x;
-					y_array[floor(k)/global.trajectorySampleRate] = projectile.v2y;
-					r_array[floor(k)/global.trajectorySampleRate] =projectile.r;
-					m_array[floor(k)/global.trajectorySampleRate] = projectile.mult;
+					x_array[floor(k)/global.Law.trajectorySampleRate] = projectile.v2x;
+					y_array[floor(k)/global.Law.trajectorySampleRate] = projectile.v2y;
+					r_array[floor(k)/global.Law.trajectorySampleRate] =projectile.r;
+					m_array[floor(k)/global.Law.trajectorySampleRate] = projectile.mult;
 					k++;
 				}
 				return;
@@ -56,10 +56,10 @@ function simulate_trajectory(start_x, start_y, launch_vector_x, launch_vector_y,
 		}
 		projectile.v2x += (projectile.x_vel/60);
 		projectile.v2y += (projectile.y_vel/60);
-		x_array[floor(k)/global.trajectorySampleRate] = projectile.v2x;
-		y_array[floor(k)/global.trajectorySampleRate] = projectile.v2y;
-		r_array[floor(k)/global.trajectorySampleRate] =projectile.r;
-		m_array[floor(k)/global.trajectorySampleRate] = projectile.mult;
+		x_array[floor(k)/global.Law.trajectorySampleRate] = projectile.v2x;
+		y_array[floor(k)/global.Law.trajectorySampleRate] = projectile.v2y;
+		r_array[floor(k)/global.Law.trajectorySampleRate] =projectile.r;
+		m_array[floor(k)/global.Law.trajectorySampleRate] = projectile.mult;
 	}
 	log_trajectory_performance_time( current_time - starttime);
 }
@@ -82,7 +82,7 @@ function apply_gravitational_acceleration(obj_struct, subj_x, subj_y, subj_mass,
 function increase_projectile_radius(_projectile){
 	var modifier = ((2/(60) * (0.1*_projectile.r))* global.simRate);
 	if(global.boost || global.brake){
-		if(_projectile.r > global.projectileRadius)
+		if(_projectile.r > global.Law.pRadius)
 			_projectile.r -= modifier;
 		
 	}else{
@@ -93,7 +93,7 @@ function apply_flyby_mod(obj_struct, dist, projectile_radius, vel, preview = fal
 	if(obj_struct.name == "square")
 		return;
 	var obj_rad = (obj_struct.dr);
-	var mult_halo = obj_rad * global.multiplierRadiusMod;
+	var mult_halo = obj_rad * global.Law.multiplierRadiusMod;
 	var max_rad = obj_rad + mult_halo + projectile_radius;
 	var combradsq = power(max_rad,2)
 	var truedist = (dist - combradsq);
@@ -113,7 +113,7 @@ function apply_flyby_mod(obj_struct, dist, projectile_radius, vel, preview = fal
 		}
 			var prevMult = vel.mult;
 			vel.frameMult ++;	
-			vel.mult += global.multiplierRate*vel.frameMult*array_length(hit_list) * ratio;
+			vel.mult += global.Law.multiplierRate*vel.frameMult*array_length(hit_list) * ratio;
 			var boostlimiter =500;
 			var x_vel_mod = vel.x_vel*ratio/boostlimiter;
 			var y_vel_mod = vel.y_vel*ratio/boostlimiter;
@@ -132,7 +132,7 @@ function apply_flyby_mod(obj_struct, dist, projectile_radius, vel, preview = fal
 			multiTimer = multiLifespan;
 			multi_x = x;
 			multi_y = y;
-			obj_game.total_multiplier += global.multiplierRate*vel.frameMult*array_length(hit_list) * ratio;	
+			obj_game.total_multiplier += global.Law.multiplierRate*vel.frameMult*array_length(hit_list) * ratio;	
 		}else{
 		}
 		
@@ -140,18 +140,18 @@ function apply_flyby_mod(obj_struct, dist, projectile_radius, vel, preview = fal
 }
 function apply_special_abilities(_projectile){
 	
-	if(global.boost && projectile.r > global.projectileRadius){
-		projectile.x_vel += projectile.x_vel * global.boostMod;	
-		projectile.y_vel += projectile.y_vel * global.boostMod;	
+	if(global.boost && projectile.r > global.Law.pRadius){
+		projectile.x_vel += projectile.x_vel * global.Law.boostMod;	
+		projectile.y_vel += projectile.y_vel * global.Law.boostMod;	
 	
-	}else if(global.brake&& projectile.r > global.projectileRadius){
-		projectile.x_vel -= projectile.x_vel * global.brakeMod;	
-		projectile.y_vel -= projectile.y_vel * global.brakeMod;	
+	}else if(global.brake&& projectile.r > global.Law.pRadius){
+		projectile.x_vel -= projectile.x_vel * global.Law.brakeMod;	
+		projectile.y_vel -= projectile.y_vel * global.Law.brakeMod;	
 	}
 }
 
 function log_projectile_trail(){
-	if(frame % global.trail_sample_rate == 0){
+	if(frame % global.Settings.trailDensity.value == 0){
 		for(var i =array_length(x_trail) -1; i > 0; i--){
 
 			x_trail[i] = x_trail[i-1];
@@ -165,7 +165,7 @@ function log_projectile_trail(){
 
 function projectile_boundary_check(_projectile){
 	var distSquare = power( x , 2)+ power(y,2) - power(_projectile.r,2);
-	var compareSquare = global.play_area_radius_sq;
+	var compareSquare = global.Law.sqPlayRadius;
 	var startDist = power(get_struct_x_position(obj_game.level.start) - x, 2) + power(get_struct_y_position(obj_game.level.start) - y, 2);
 	var startComp = power(obj_game.level.start.r + _projectile.r, 2);
 	if(!dead && (distSquare >= compareSquare || (startDist < startComp && !invincibility))){
@@ -178,8 +178,8 @@ function projectile_boundary_check(_projectile){
 			if(instance_exists(bounceSound))
 				audio_sound_pitch(bounceSound, pitch);
 			var mass = get_projectile_mass(_projectile.r);
-			obj_game.level.start.d_x += (_projectile.r/2* _projectile.x_vel/global.minFrameRate);
-			obj_game.level.start.d_y += (_projectile.r/2*_projectile.y_vel/global.minFrameRate);
+			obj_game.level.start.d_x += (_projectile.r/2* _projectile.x_vel/global.Law.physRate);
+			obj_game.level.start.d_y += (_projectile.r/2*_projectile.y_vel/global.Law.physRate);
 			_projectile.x_vel = (-_projectile.x_vel * random_range(0.9,1.2));
 			_projectile.y_vel = (-_projectile.y_vel * random_range(0.9,1.2));
 			var newX = get_struct_x_position(obj_game.level.start);
@@ -193,21 +193,21 @@ function projectile_boundary_check(_projectile){
 				}
 				
 			}
-			if(power( newX,2)+power(newY,2)>global.play_area_radius_sq
+			if(power( newX,2)+power(newY,2)>global.Law.sqPlayRadius
 			|| collision_check(obj_game.level.endpoint,get_square_distance(obj_game.level.endpoint,newX, newY), obj_game.level.start.r)||
 			compCheck){
 				trigger_reset();
 			}else{
 			
 			
-				obj_game.cursor_x =  newX + obj_game.i_state.launch_x;
-				obj_game.cursor_y =  newY + obj_game.i_state.launch_y;	
+				obj_game.cursor_x =  newX + global.Input.launch_x;
+				obj_game.cursor_y =  newY + global.Input.launch_y;	
 			}
 			alarm[0] = fps/4;
 			dead = true;
 			
 		}else{
-			obj_game.stopTimer = 60;
+			global.Graphics.stopTimer = 60;
 			//if(instance_exists(bounceSound))
 			//audio_sound_pitch(bounceSound, pitch);
 			//projectile.x_vel = (-projectile.x_vel * random_range(0.9,1.2));
@@ -231,7 +231,7 @@ function apply_projectile_velocity(_projectile){
 	y = projectile.v2y;
 }
 function set_projectile_engine_sound(_dist){
-	var enginePitch = (global.play_area_radius_sq/(_dist))/2;
+	var enginePitch = (global.Law.sqPlayRadius/(_dist))/2;
 	if(global.brake || global.boost){
 		enginePitch *= 0.25;	
 	}
@@ -257,7 +257,7 @@ function apply_projectile_struct_interaction(_projectile, _obj_struct, startTime
 		
 		if(struct_exists(_obj_struct, "tr")){
 			if(_obj_struct .r > _obj_struct .tr){
-				audio_emitter_pitch(obj_game.endEmitter, obj_game.pulseRate);
+				audio_emitter_pitch(obj_game.endEmitter, global.Game.pulseRate);
 				update_trajectory_preview();
 			}else{
 				audio_sound_pitch(obj_game.endSound, 1);
@@ -269,7 +269,7 @@ function apply_projectile_struct_interaction(_projectile, _obj_struct, startTime
 			//audio_sound_pitch(goodSound, pitch);
 			add_points(points);
 		}else if(_obj_struct.name !="square"){
-			projectile.color = global.neutral_hue;
+			projectile.color = global.Settings.neutralHue.value;
 			audio_play_sound(BadSound, 0, false, 0.5);
 			var endDistSquare = power(get_struct_x_position( _obj_struct) - get_struct_x_position( obj_game.level.endpoint), 2) + power(get_struct_y_position( _obj_struct)- get_struct_y_position( obj_game.level.endpoint), 2);
 			var startDistSq = power(_obj_struct.v2x - get_struct_x_position( obj_game.level.start), 2) + power(_obj_struct.v2y -get_struct_y_position( obj_game.level.start), 2);
@@ -308,7 +308,7 @@ function apply_projectile_struct_interaction(_projectile, _obj_struct, startTime
 	return dist;
 }
 function get_projectile_mass(radius){
-	return(radius) + global.projectileMassFactor;
+	return(radius) + global.Law.pMassFactor;
 }
 
 function get_struct_square_distance(obj_struct, subj_struct){
@@ -380,7 +380,7 @@ function boundary_collision_check(subj_struct, overlap = false){
 		modifier = -1;
 	var r = get_actual_radius(subj_struct) * modifier;
 	var dist = power(get_struct_x_position(subj_struct) + get_struct_y_position + r, 2 );	
-    return dist > global.play_area_radius_sq;
+    return dist > global.Law.sqPlayRadius;
 }
 function collision_check(obj_struct, dist, subj_r){
 	if(struct_exists(obj_struct,"dr")){
@@ -399,7 +399,7 @@ function get_component_mass(obj_struct){
 }
 
 function gravity_function(m_1, m_2, d_squared){
-	return 	(m_1* m_2 *global.gravitation)/d_squared;
+	return 	(m_1* m_2 *global.Law.gravitation)/d_squared;
 }
 
 function get_gravitational_force(obj_struct, subj_dist, subj_mass){
@@ -412,7 +412,7 @@ function get_gravitational_force(obj_struct, subj_dist, subj_mass){
 }
 
 function get_gravitational_force_change(delta_mass, d_squared){
-	var delta_force = gravity_function(delta_mass, global.grid_mass, d_squared);
+	var delta_force = gravity_function(delta_mass, global.Law.gridMass, d_squared);
 	return delta_force;
 }
 function get_gravitational_force_at_point(subj_x, subj_y, subj_mass = 1, _level = noone){
@@ -508,13 +508,13 @@ function get_total_gravitational_acceleration(subj_x, subj_y, subj_mass = 1){
 }
 #region coordinate translation functions
 function world_coordinate_to_sim_grid_coordinate(x_pos, y_pos){
-	var index_x = 	(x_pos + global.play_area_radius)/global.sim_grid_size;
-	var index_y = 	(y_pos + global.play_area_radius)/global.sim_grid_size;
+	var index_x = 	(x_pos + global.Law.playRadius)/global.sim_grid_size;
+	var index_y = 	(y_pos + global.Law.playRadius)/global.sim_grid_size;
 	return [index_x, index_y];
 }
 function sim_grid_coordinate_to_world_coordinate(index_x, index_y){
-	var x_pos = (index_x * global.sim_grid_size)-global.play_area_radius;
-	var y_pos = (index_y * global.sim_grid_size)-global.play_area_radius;
+	var x_pos = (index_x * global.sim_grid_size)-global.Law.playRadius;
+	var y_pos = (index_y * global.sim_grid_size)-global.Law.playRadius;
 	return [x_pos, y_pos];
 }
 function sim_grid_coordinate_to_index(coord){
@@ -575,8 +575,8 @@ function init_sim_grid(){
 		global.depth_array[i] = array_create(global.sim_grid_count);
 		for(var k = global.sim_grid_count-1; k >=0; k--){
 			global.depth_array[i][k] = array_create(4, -1);
-			var x_coord = i*global.sim_grid_size-(global.play_area_radius);
-			var y_coord = k*global.sim_grid_size -(global.play_area_radius);
+			var x_coord = i*global.sim_grid_size-(global.Law.playRadius);
+			var y_coord = k*global.sim_grid_size -(global.Law.playRadius);
 			global.depth_array[i][k][0] = x_coord;
 			global.depth_array[i][k][1] = y_coord;
 			global.depth_array[i][k][2] = get_edge_falloff(x_coord, y_coord);
@@ -595,11 +595,11 @@ function calculate_sim_grid(){
 		global.depth_array[i] = array_create(global.sim_grid_count);
 		for(var k = global.sim_grid_count-1; k >=0; k--){
 			global.depth_array[i][k] = array_create(4, -1);
-			var x_coord = i*global.sim_grid_size-(global.play_area_radius);
-			var y_coord = k*global.sim_grid_size -(global.play_area_radius);
+			var x_coord = i*global.sim_grid_size-(global.Law.playRadius);
+			var y_coord = k*global.sim_grid_size -(global.Law.playRadius);
 			global.depth_array[i][k][0] = x_coord;
 			global.depth_array[i][k][1] = y_coord;
-			global.depth_array[i][k][2] = get_full_z_depth(x_coord, y_coord ,global.grid_mass);
+			global.depth_array[i][k][2] = get_full_z_depth(x_coord, y_coord ,global.Law.gridMass);
 			//global.depth_array[i][k][3] = get_vert_alpha(x_coord, y_coord);
 		}
 	}
@@ -609,8 +609,8 @@ function calculate_sim_grid(){
 
 
 function trigger_spiral_grid_update(x_coord, y_coord){
-	var d_array_start_x = max(0,round(x_coord + global.play_area_radius- radius)/global.sim_grid_size);
-	var d_array_start_y =max(0, round(y_coord + global.play_area_radius - radius)/global.sim_grid_size);
+	var d_array_start_x = max(0,round(x_coord + global.Law.playRadius- radius)/global.sim_grid_size);
+	var d_array_start_y =max(0, round(y_coord + global.Law.playRadius - radius)/global.sim_grid_size);
 	obj_game.grid_update_start_x = 	d_array_start_x;
 	obj_game.grid_update_start_y = d_array_start_y;
 	obj_game.grid_update_curr_x = d_array_start_x;
@@ -649,13 +649,13 @@ function get_full_z_depth(_x,_y,_mass){
 }
 
 function get_edge_percentage(_x, _y, _r = 0){
-	return clamp(1-((power(_x -global.play_area_radius,2) + power(_y-global.play_area_radius,2) ) /global.play_area_radius_sq),0,1);
+	return clamp(1-((power(_x -global.Law.playRadius,2) + power(_y-global.Law.playRadius,2) ) /global.Law.sqPlayRadius),0,1);
 	
 }
 function get_edge_falloff(_x, _y){
 	
 	
-	var edgDist = get_edge_percentage(_x, _y) * global.edgeFalloff;
+	var edgDist = get_edge_percentage(_x, _y) * global.Law.edgeFalloff;
 	return edgDist;
 }
 function async_sim_grid_update(grid_struct){
@@ -669,22 +669,22 @@ function async_sim_grid_update(grid_struct){
 	{
 		if(i>= global.sim_grid_count){
 			log_grid_update_performance_time(current_time - startTime);
-			if(global.fullGrid)
+			if(global.Settings.fullGrid.value)
 				//update_grid_points_in_buffer(grid_struct.curr_x,grid_struct.curr_y, update_count);
 			grid_struct.finished = true;
 			return;
 		}
 		for(var k = temp_curr_y; k < global.sim_grid_count; k++){
-			global.depth_array[@i][@k][@2] = get_full_z_depth(i*global.sim_grid_size -(global.play_area_radius),k*global.sim_grid_size-(global.play_area_radius),global.grid_mass);
+			global.depth_array[@i][@k][@2] = get_full_z_depth(i*global.sim_grid_size -(global.Law.playRadius),k*global.sim_grid_size-(global.Law.playRadius),global.Law.gridMass);
 			
-			if(global.fullGrid)
+			if(global.Settings.fullGrid.value)
 				set_grid_point_vertices(i,k)
 			update_count++;
-			if(update_count > global.grid_update_chunk/((array_length(_level.components)+1)
+			if(update_count > global.Settings.gridUpdateRate.value/((array_length(_level.components)+1)
 			//*array_length(obj_game.grid_updates)
 			)){
 				log_grid_update_performance_time(current_time - startTime);
-				if(global.fullGrid){
+				if(global.Settings.fullGrid.value){
 					//set_grid_point_vertices(grid_struct.curr_x,grid_struct.curr_y);
 				}
 				grid_struct.curr_x =i;
@@ -738,17 +738,17 @@ function async_spiral_sim_grid_update(grid_struct){
 	while(temp_curr_i <= grid_struct.count){
 		if(temp_curr_i >= grid_struct.count){
 			log_grid_update_performance_time(current_time - startTime);
-			//if(global.fullGrid)
+			//if(global.Settings.fullGrid.value)
 				//update_grid_points_in_buffer(grid_struct.curr_x,grid_struct.curr_y, update_count);
 			grid_struct.finished = true;
 			return;
 		}
 		for(var k = temp_curr_n_index; k < temp_curr_n*2; k++){
 			update_count++;
-			if(update_count > global.grid_update_chunk/array_length(obj_game.spiral_grid_updates)
+			if(update_count > global.Settings.gridUpdateRate.value/array_length(obj_game.spiral_grid_updates)
 			){
 				//log_grid_update_performance_time(current_time - startTime);
-				if(global.fullGrid){
+				if(global.Settings.fullGrid.value){
 					//update_grid_points_in_buffer(grid_struct.curr_x,grid_struct.curr_y, update_count-1);
 				}
 				grid_struct.curr_x = temp_curr_x;
@@ -842,7 +842,7 @@ function async_spiral_sim_grid_update(grid_struct){
 				continue;
 			}
 			if(grid_struct.delta_m == 0)
-				global.depth_array[@temp_curr_x][@temp_curr_y][@2] = get_full_z_depth(global.depth_array[@temp_curr_x][@temp_curr_y][0],global.depth_array[@temp_curr_x][@temp_curr_y][1],global.grid_mass);
+				global.depth_array[@temp_curr_x][@temp_curr_y][@2] = get_full_z_depth(global.depth_array[@temp_curr_x][@temp_curr_y][0],global.depth_array[@temp_curr_x][@temp_curr_y][1],global.Law.gridMass);
 			else{
 				//global.depth_array[@temp_curr_x][@temp_curr_y][@2] += 150;
 				
@@ -860,7 +860,7 @@ function async_spiral_sim_grid_update(grid_struct){
 				 obj_game.debug_y =  global.depth_array[@temp_curr_x][@temp_curr_y][1];
 			}
 			var coord_index = sim_grid_coordinate_to_index([temp_curr_x, temp_curr_y]);
-			if(global.fullGrid && !array_contains(obj_game.updated_grid_points, coord_index ))
+			if(global.Settings.fullGrid.value && !array_contains(obj_game.updated_grid_points, coord_index ))
 				array_push( obj_game.updated_grid_points, coord_index);
 
 			temp_curr_i++;
@@ -870,10 +870,10 @@ function async_spiral_sim_grid_update(grid_struct){
 			|| temp_curr_x < 0 || temp_curr_y < 0)
 				continue;
 			
-			global.depth_array[@temp_curr_x][@temp_curr_y][@2] = get_full_z_depth(global.depth_array[@temp_curr_x][@temp_curr_y][0],global.depth_array[@temp_curr_x][@temp_curr_y][1],global.grid_mass);
+			global.depth_array[@temp_curr_x][@temp_curr_y][@2] = get_full_z_depth(global.depth_array[@temp_curr_x][@temp_curr_y][0],global.depth_array[@temp_curr_x][@temp_curr_y][1],global.Law.gridMass);
 		
 			var coord_index = sim_grid_coordinate_to_index([temp_curr_x, temp_curr_y]);
-			if(global.fullGrid && !array_contains(obj_game.updated_grid_points, coord_index ))
+			if(global.Settings.fullGrid.value && !array_contains(obj_game.updated_grid_points, coord_index ))
 				array_push( obj_game.updated_grid_points, coord_index);
 			update_count++;
 			temp_curr_i++;
@@ -912,7 +912,7 @@ function async_spiral_sim_grid_update(grid_struct){
 //			log_grid_update_performance_time(current_time - startTime);
 //			//show_debug_message("updated sim grid indices " + string(startIndex) + " through " + string(endIndex) + " out of " + string(power(global.sim_grid_count,2))+ " in " + string(current_time-startTime) + " ms"); 
 				
-//			if(global.fullGrid)
+//			if(global.Settings.fullGrid.value)
 //				update_grid_points_in_buffer(grid_update_curr_x,grid_update_curr_y, update_count);
 //			obj_game.grid_update_start_x = -1;
 //			obj_game.grid_update_start_y = -1;
@@ -921,17 +921,17 @@ function async_spiral_sim_grid_update(grid_struct){
 			
 //			if(global.gridDebugMessages)
 //				show_debug_message ("Grid Simulation Update Completed at coordinate (" + string(obj_game.grid_update_curr_x) + ", " + string(obj_game.grid_update_curr_y) + ")");
-//			obj_game.grid_trigger = true;
-//			//if(global.fullGrid)
-//			//	fill_grid_buffer(global.fullGrid);
+//			global.Graphics.gridTrigger = true;
+//			//if(global.Settings.fullGrid.value)
+//			//	fill_grid_buffer(global.Settings.fullGrid.value);
 //			return;
 //		}
 //		for(var k = temp_curr_y; k < global.sim_grid_count; k++){
 //			if(obj_game.grid_update_deltas[2] == 0){
-//				global.depth_array[@i][@k][@2] = get_gravitational_force_at_point(i*global.sim_grid_size -(global.play_area_radius), 
-//				k*global.sim_grid_size-(global.play_area_radius),global.grid_mass);
-//				var alpha = clamp(((power(i*global.sim_grid_size -(global.play_area_radius),2) + power(k*global.sim_grid_size-(global.play_area_radius),2) ) /global.play_area_radius_sq),0,1);
-//				var edgDist = alpha * global.edgeFalloff;
+//				global.depth_array[@i][@k][@2] = get_gravitational_force_at_point(i*global.sim_grid_size -(global.Law.playRadius), 
+//				k*global.sim_grid_size-(global.Law.playRadius),global.Law.gridMass);
+//				var alpha = clamp(((power(i*global.sim_grid_size -(global.Law.playRadius),2) + power(k*global.sim_grid_size-(global.Law.playRadius),2) ) /global.Law.sqPlayRadius),0,1);
+//				var edgDist = alpha * global.Law.edgeFalloff;
 //				global.depth_array[i][k][2] += edgDist;
 //			}else{
 //				var dist =  power(global.depth_array[@i][@k][@0]-obj_game.grid_update_deltas[0],2) +  power(global.depth_array[@i][@k][@1]-obj_game.grid_update_deltas[1],2)
@@ -947,15 +947,15 @@ function async_spiral_sim_grid_update(grid_struct){
 //				var startIndex = obj_game.grid_update_curr_x * global.sim_grid_count + obj_game.grid_update_curr_y;
 				
 //				log_grid_update_performance_time(current_time - startTime);
-//				if(global.gridDebugMessages|| global.inBrowser)
+//				if(global.gridDebugMessages|| global.Law.inBrowser)
 //					show_debug_message ("Grid Simulation Update Ended at coordinate (" + string(i) + ", " + string(k) + ") after " + string(update_count) + " updates");
-//				if(global.fullGrid){
+//				if(global.Settings.fullGrid.value){
 //					update_grid_points_in_buffer(grid_update_curr_x,grid_update_curr_y, update_count-1);
 //				}
 //				//show_debug_message("updated sim grid indices " + string(startIndex) + " through " + string(endIndex) + " out of " + string(power(global.sim_grid_count,2))+ " in " + string(current_time-startTime) + " ms\nCurrent Update Count: " + string(update_count)); 
 //				obj_game.grid_update_curr_x =i;
 //				obj_game.grid_update_curr_y =k;
-//				obj_game.grid_trigger = true;
+//				global.Graphics.gridTrigger = true;
 //				return;
 //			}
 //		}

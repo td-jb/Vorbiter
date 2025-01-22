@@ -17,12 +17,12 @@ if(global.liveProjectiles < 150){
 	//else
 	//	multiplierSound = audio_play_sound(multiplier, global.liveProjectiles, true,  1, audio_sound_get_track_position(obj_game.endSound));
 	
-		//audio_sound_pitch(multiplierSound, obj_game.pulseRate);
+		//audio_sound_pitch(multiplierSound, global.Game.pulseRate);
 		//audio_sound_gain(multiplierSound,0,0.05);
 }
 
-x_trail = array_create(global.trail_length);
-y_trail = array_create(global.trail_length);
+x_trail = array_create(global.Settings.trailLength.value);
+y_trail = array_create(global.Settings.trailLength.value);
 
 
 for(var i =0; i < array_length(x_trail); i++){

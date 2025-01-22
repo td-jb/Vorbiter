@@ -9,5 +9,5 @@ alarm[0] = lifespan;
 points = 0;
 radius = 10;
 
-	text_x_vector = sin( random_range(0,2*pi))*5 *  global.screenScale;
-	text_y_vector = cos(random_range(0,2*pi))* 5 * global.screenScale;
+	text_x_vector = sin( random_range(0,2*pi))*5 *  global.Graphics.screenScale;
+	text_y_vector = cos(random_range(0,2*pi))* 5 * global.Graphics.screenScale;

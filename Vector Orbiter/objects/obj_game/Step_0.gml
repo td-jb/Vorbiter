@@ -20,7 +20,7 @@ for(var i = 0; i < array_length(updated_grid_points); i++){
 }
 log_grid_vertex_performance_time(current_time - startTime);
 updated_grid_points = array_create(0);
-if(global.debugMode != DebugMode.SCREEN || room_frame%5 == 0){
+if(global.debugMode != DebugMode.SCREEN || global.Game.roomFrame%5 == 0){
 	finished_spiral_grid_updates = array_create(0);
 	for(var i = 0; i < array_length(spiral_grid_updates); i++){
 		async_spiral_sim_grid_update(spiral_grid_updates[i]);
@@ -63,13 +63,12 @@ if(!global.intro && window_has_focus()){
 }
 set_cursor_position();
 set_camera_view();
-if(global.threeD && !global.fullGrid){
-	if(grid_x_count != prev_grid_x_count 
-	|| grid_y_count != prev_grid_y_count
-	|| prev_grid_x_offset != grid_x_offset 
-	|| prev_grid_y_offset != grid_y_offset 
-	|| prev_grid_thickness != global.grid_thickness||
-	grid_trigger == true)
+if(global.Law.threeD && !global.Settings.fullGrid.value){
+	if(global.Graphics.gridCountX != global.Graphics.prev_grid_count_x 
+	|| global.Graphics.gridCountY != global.Graphics.prev_grid_count_y
+	|| global.Graphics.prev_grid_offset_x != global.Graphics.grid_x_offset 
+	|| global.Graphics.prev_grid_offset_y != global.Graphics.grid_y_offset 
+	|| global.Graphics.prev_grid_thickness != global.Settings.gridThickness.value)
 	{
 	    fill_grid_buffer();
 	}

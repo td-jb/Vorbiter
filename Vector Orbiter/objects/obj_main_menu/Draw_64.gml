@@ -2,7 +2,7 @@
 // You can write your code in this editor
 
 if(global.intro){
-	var introPerc = (current_time- global.startTime)/global.introTimer;
+	var introPerc = (current_time- global.startTime)/global.Law.introTimer;
 	var alpha = 1;
 	if(introPerc<0.25){
 		alpha = introPerc*4;
@@ -19,7 +19,7 @@ if(global.intro){
 	return;	
 }
 if(global.debugMode< DebugMode.NONE)
-draw_text(curs_x, curs_y, "x: " + string(curs_x) + "\ny: " + string(curs_y));
+draw_text(cursor_x, cursor_y, "x: " + string(cursor_x) + "\ny: " + string(cursor_y));
 
 
 if(!global.show_ui)

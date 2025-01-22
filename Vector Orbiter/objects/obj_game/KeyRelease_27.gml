@@ -1,18 +1,18 @@
 /// @description Insert description here
 // You can write your code in this editor
 
-if(global.inBrowser && window_mouse_get_locked()){
+if(global.Law.inBrowser && window_mouse_get_locked()){
 	
 	window_mouse_set_locked(false);
 	window_set_cursor(cr_default)
 	return;
 }
-if((global.projectileCount>0 )&& !reset){
+if((global.projectileCount>0 )&& !global.Game.reset){
 
 	trigger_reset();
 }else{
 	if(room == game_room){
-		if(!reset){
+		if(!global.Game.reset){
 			audio_stop_sound(endSound);
 			room_goto_previous();
 		}

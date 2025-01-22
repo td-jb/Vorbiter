@@ -3,28 +3,27 @@
 function update_trajectory_preview(){
 	simulate_trajectory(get_struct_x_position(obj_game.level.start), 
 						get_struct_y_position(obj_game.level.start), 
-						obj_game.i_state.launch_x, 
-						obj_game.i_state.launch_y,
+						global.Input.launch_x, 
+						global.Input.launch_y,
 						obj_game.shot_preview_x, 
 						obj_game.shot_preview_y, 
 						obj_game.shot_preview_r, 
 						obj_game.shot_preview_mult)
-	
 }
 function add_points(points){
 	if(room != game_room)
 		return;
-	obj_game.levelScore += points;
+	global.Game.levelScore += points;
 	global.score += points;	
 }
 
 function trigger_reset(){
-	obj_game.reset = true;
-	obj_game.completeTime = current_time;
-	obj_game.overtime = 0;
-	obj_game.pulseFactor = 1;
-	obj_game.liveProjectiles = 0;
-	obj_game.projectileCount = 0;
+	global.Game.reset = true;
+	global.Game.completeTime = global.Game.roomFrame;
+	global.Game.overtime = 0;
+	global.Game.pulseFactor = 1;
+	global.liveProjectiles = 0;
+	global.projectileCount = 0;
 	with(obj_projectile){
 		instance_destroy();	
 		
@@ -32,12 +31,12 @@ function trigger_reset(){
 }
 function restart_level(){
 	if(global.highScore == global.score){
-		global.highScore -= obj_game.levelScore;
+		global.highScore -= global.Game.levelScore;
 	}
 	
-	global.score -= obj_game.levelScore;
+	global.score -= global.Game.levelScore;
 	audio_play_sound(Endplosion, 0, false,0.8);
-	obj_game.levelScore = 0;
+	global.Game.levelScore = 0;
 	obj_game.simShotCount = 0;
 	obj_game.level.endpoint.damage = 0;
 	with(obj_projectile){
@@ -47,8 +46,8 @@ function restart_level(){
 	obj_game.spiral_grid_updates= array_create(0);
 	obj_game.grid_updates= array_create(0);
 	obj_game.last_shot_position = array_create(2, infinity);
-	obj_game.shooting = false;
-	obj_game.lastShot = 0;
+	global.Input.shooting = false;
+	global.Game.lastShot = 0;
 	trigger_grid_update();
 	global.projectileCount = 0;
 	global.liveProjectiles = 0;
@@ -56,15 +55,15 @@ function restart_level(){
 }
 function level_end_check(){
 	if(!global.editMode){
-		if(!levelComplete && (obj_game.level.endpoint.r - obj_game.level.endpoint.damage) <= obj_game.level.endpoint.tr){
+		if(!global.Game.levelComplete && (obj_game.level.endpoint.r - obj_game.level.endpoint.damage) <= obj_game.level.endpoint.tr){
 			
 			if(global.currentLevel + 1 < array_length(global.levels.array)){
 				trigger_grid_update( global.levels.array[global.currentLevel + 1]);
 			}
-			pulseRate = 1;
-			levelComplete = true;
-			completeTime = room_frame;
-			i_state.mouse_click_start_x = i_state.mouse_click_start_y = -1;
+			global.Game.pulseRate = 1;
+			global.Game.levelComplete = true;
+			global.Game.completeTime = global.Game.roomFrame;
+			global.Input.mouse_click_start_x = global.Input.mouse_click_start_y = -1;
 			audio_play_sound(Victory,0,false, 0.8);
 			audio_play_sound(Endplosion,0,false, 0.7);
 			audio_sound_gain(shootingSound,0,1000);
@@ -81,8 +80,8 @@ function level_end_check(){
 			}
 			
 		}
-		if(levelComplete || reset){
-			overtime++;
+		if(global.Game.levelComplete || global.Game.reset){
+			global.Game.overtime++;
 			return true;
 		}
 	}else{
@@ -91,23 +90,23 @@ function level_end_check(){
 	return false;
 }
 function level_end_update(){
-	cosPulse = cos(pi * pulseFactor);
-	if(levelComplete || reset){
-		var otFactor = power((obj_game.overtime),2);
-		cosPulse += otFactor;
+	global.Game.cosPulse = cos(pi * global.Game.pulseFactor);
+	if(global.Game.levelComplete || global.Game.reset){
+		var otFactor = power((global.Game.overtime),2);
+		global.Game.cosPulse += otFactor;
 	
-		audio_emitter_pitch(obj_game.endEmitter, obj_game.pulseRate);
-		if(cosPulse + level.endpoint.r > room_width*3)
+		audio_emitter_pitch(obj_game.endEmitter, global.Game.pulseRate);
+		if(global.Game.cosPulse + level.endpoint.r > room_width*3)
 		{
-			pulseRate = 1;
-			if(!reset){
+			global.Game.pulseRate = 1;
+			if(!global.Game.reset){
 				change_level();
 				if(room == game_room){
 					postGame = true;	
 				}
 			}else{
-				reset = false;	
-				audio_emitter_pitch(obj_game.endEmitter, obj_game.pulseRate);
+				global.Game.reset = false;	
+				audio_emitter_pitch(obj_game.endEmitter, global.Game.pulseRate);
 				restart_level();
 			}
 			return;
@@ -143,19 +142,19 @@ function end_postgame(){
 		global.score = 0;
 		global.projectileCount = 0;
 		global.liveProjectiles = 0;	
-		add_high_score(array_length(global.levels.array) -1, obj_game.levelScore);
+		add_high_score(array_length(global.levels.array) -1, global.Game.levelScore);
 	}else{
-		add_high_score(global.currentLevel -1, obj_game.levelScore);
+		add_high_score(global.currentLevel -1, global.Game.levelScore);
 	}
 	save_player_data();
-	currX = 0;
-	currY = 0;
-	global.screenScale = 1;
-	levelScore = 0;
+	global.Graphics.currX = 0;
+	global.Graphics.currY = 0;
+	global.Graphics.screenScale = 1;
+	global.Game.levelScore = 0;
 	postGame = false;
-	room_frame = 0;
-	lastShot = 0;
-	obj_game.overtime = 0;
+	global.Game.roomFrame = 0;
+	global.Game.lastShot = 0;
+	global.Game.overtime = 0;
 	global.projectileCount = 0;
 	global.liveProjectiles = 0;
 	
@@ -167,7 +166,7 @@ function change_level(inc = 1){
 	if(global.currentLevel + inc >= array_length(global.levels.array) || global.currentLevel + inc < 0){
 		
 		add_high_score(global.currentLevel +1, global.score);
-		add_high_score(global.currentLevel, obj_game.levelScore);
+		add_high_score(global.currentLevel, global.Game.levelScore);
 		reset_struct(level.endpoint)
 		global.currentLevel = 0;
 		audio_stop_sound(endSound);
@@ -175,14 +174,14 @@ function change_level(inc = 1){
 			
 		simShotCount = 0;
 	}else{
-		levelComplete = false; 
+		global.Game.levelComplete = false; 
 		reset_struct(level.endpoint)
 		global.currentLevel += inc;
 		level_init(global.levels.array[global.currentLevel]);
 		obj_game.spiral_grid_updates= array_create(0);
 		obj_game.grid_updates= array_create(0);
 		trigger_grid_update(level)
-		audio_emitter_pitch(obj_game.endEmitter, obj_game.pulseRate);
+		audio_emitter_pitch(obj_game.endEmitter, global.Game.pulseRate);
 		simShotCount = 0;
 				
 	}
@@ -223,14 +222,14 @@ function level_init(level_struct){
 	
 }
 function increment_game_timers(){
-	if(stopTimer>0)
-		stopTimer--;
-	shotDelay = baseShotDelay + (baseShotDelay * (global.liveProjectiles + 1)/4);
+	if(global.Graphics.stopTimer>0)
+		global.Graphics.stopTimer--;
+	global.Game.shotDelay = global.Law.baseShotDelay + (global.Law.baseShotDelay * (global.liveProjectiles + 1)/4);
 	audio_sound_pitch(shootingSound,1.5- (1-(1/(global.liveProjectiles+1))));
-	pulseRate = ((level.endpoint.r)/(level.endpoint.r- level.endpoint.damage))
-	pulseFactor = ((room_frame)%(global.minFrameRate/(max(0.0001,pulseRate)) * global.simRate)/(30));
-	minScale = lerp(minScale, targetMinScale, 4/fps);
-	room_frame++;
+	global.Game.pulseRate = ((level.endpoint.r)/(level.endpoint.r- level.endpoint.damage))
+	global.Game.pulseFactor = ((global.Game.roomFrame)%(global.Law.physRate/(max(0.0001, global.Game.pulseRate)) * global.simRate)/(30));
+	global.Graphics.minScale = lerp(global.Graphics.minScale, global.Graphics.targetMinScale, 4/fps);
+	global.Game.roomFrame++;
 }
 function wipe_maximums(){
 	global.maxTrajectoryTime = 0
@@ -244,11 +243,11 @@ function wipe_maximums(){
 
 function register_previous_grid_details(){
 	
-	prev_grid_x_count = grid_x_count;
-	prev_grid_y_count = grid_y_count;
-	prev_grid_x_offset = grid_x_offset;
-	prev_grid_y_offset = grid_y_offset;
-	prev_grid_thickness = global.grid_thickness;
+	global.Graphics.prev_grid_count_x = global.Graphics.gridCountX;
+	global.Graphics.prev_grid_count_y = global.Graphics.gridCountY;
+	global.Graphics.prev_grid_offset_x = global.Graphics.grid_x_offset;
+	global.Graphics.prev_grid_offset_y = global.Graphics.grid_y_offset;
+	global.Graphics.prev_grid_thickness = global.Settings.gridThickness.value;
 	
 }
 function get_projectile_damage(projectile){
@@ -325,7 +324,7 @@ function create_projectile_struct(_x, _y, _x_vel, _y_vel){
 		y_vel:_y_vel,
 		v2x: _x,
 		v2y: _y,
-		r: global.projectileRadius,
+		r: global.Law.pRadius,
 		mult: 1,
 		frameMult: 0,
 		color: color_get_hue( global.projectile_color),
@@ -334,6 +333,9 @@ function create_projectile_struct(_x, _y, _x_vel, _y_vel){
 	return newProjectile;
 }
 
+function create_sim_projectile(_x, _y, _x_vel, _y_vel, _r, _mult){
+	
+}
 
 function set_cursor_type(){
 	
@@ -352,37 +354,37 @@ function set_cursor_delta(){
 	//else if (room == game_room){
 	//	window_set_cursor(cr_none);	
 	//}
-	i_state.d_x = (window_mouse_get_x()- window_get_width()/2)* global.screenScale;
-	i_state.d_y = (window_mouse_get_y() - window_get_height()/2)* global.screenScale;
+	global.Input.d_x = (window_mouse_get_x()- window_get_width()/2)* global.Graphics.screenScale;
+	global.Input.d_y = (window_mouse_get_y() - window_get_height()/2)* global.Graphics.screenScale;
 	if(room==game_room && os_browser == browser_not_a_browser){
 		window_mouse_set(window_get_width()/2,window_get_height()/2);
 	}else if(room==game_room){
-		i_state.d_x = window_mouse_get_delta_x() * global.screenScale;
-		i_state.d_y = window_mouse_get_delta_y() * global.screenScale;
+		global.Input.d_x = window_mouse_get_delta_x() * global.Graphics.screenScale;
+		global.Input.d_y = window_mouse_get_delta_y() * global.Graphics.screenScale;
 	}
 	
 }
 function set_cursor_position(){
 	
-	cursor_x = clamp(cursor_x, -global.play_area_radius, global.play_area_radius);
-	cursor_y = clamp(cursor_y, -global.play_area_radius, global.play_area_radius);
+	cursor_x = clamp(cursor_x, -global.Law.playRadius, global.Law.playRadius);
+	cursor_y = clamp(cursor_y, -global.Law.playRadius, global.Law.playRadius);
 }
 function process_user_inputs(){
 	if(keyboard_check_released(vk_tab)&& os_browser == browser_not_a_browser){
 		global.editMode = !global.editMode;
 	}
 	if(mouse_wheel_down()){
-		targetMinScale = clamp(targetMinScale + scrollRate* global.screenScale, global.screenScale, maxScale);
+		global.Graphics.targetMinScale = clamp(global.Graphics.targetMinScale + global.Settings.scrollRate.value* global.Graphics.screenScale, global.Graphics.screenScale, global.Graphics.maxScale);
 		
 	}else if(mouse_wheel_up()){
 			
-	targetMinScale = clamp(targetMinScale -  scrollRate* global.screenScale, 0.5, maxScale);
+	global.Graphics.targetMinScale = clamp(global.Graphics.targetMinScale -  global.Settings.scrollRate.value* global.Graphics.screenScale, 0.5, global.Graphics.maxScale);
 		
 	}
 	if(!global.editMode){
 		if(keyboard_check(vk_control)){
-			i_state.d_x = i_state.d_x/(4*global.screenScale);
-			i_state.d_y = i_state.d_y/(4*global.screenScale);
+			global.Input.d_x = global.Input.d_x/(4*global.Graphics.screenScale);
+			global.Input.d_y = global.Input.d_y/(4*global.Graphics.screenScale);
 		}
 		if(keyboard_check(vk_space)){
 			global.boost = true;
@@ -396,62 +398,61 @@ function process_user_inputs(){
 		{
 			global.brake = false;	
 		}
-		if(room_frame > obj_game.lastShot+shotDelay && keyboard_check(vk_lshift)&& last_shot_position[0] != infinity){
+		if(global.Game.roomFrame > global.Game.lastShot+global.Game.shotDelay && keyboard_check(vk_lshift)&& last_shot_position[0] != infinity){
 			cursor_x = last_shot_position[0];
 			cursor_y = last_shot_position[1];
 			shooting = true;
-			i_state.mouse_click_start_x = get_struct_x_position(obj_game.level.start);
-			i_state.mouse_click_start_y = get_struct_y_position(obj_game.level.start);
-			i_state.launch_x = cursor_x-i_state.mouse_click_start_x;
-			i_state.launch_y = cursor_y-i_state.mouse_click_start_y;
-			create_projectile(i_state.mouse_click_start_x, i_state.mouse_click_start_y, i_state.launch_x, i_state.launch_y);
+			global.Input.mouse_click_start_x = get_struct_x_position(obj_game.level.start);
+			global.Input.mouse_click_start_y = get_struct_y_position(obj_game.level.start);
+			global.Input.launch_x = cursor_x-global.Input.mouse_click_start_x;
+			global.Input.launch_y = cursor_y-global.Input.mouse_click_start_y;
+			create_projectile(global.Input.mouse_click_start_x, global.Input.mouse_click_start_y, global.Input.launch_x, global.Input.launch_y);
 			audio_sound_gain(shootingSound,.7,30);
-			lastShot = room_frame;
+			global.Game.lastShot = global.Game.roomFrame;
 		}
 	}
 	if(mouse_check_button_pressed(mb_left)){
 		shooting = true;
 		if(!global.editMode){
-			i_state.mouse_click_start_x = get_struct_x_position(obj_game.level.start);
-			i_state.mouse_click_start_y = get_struct_y_position(obj_game.level.start);	
+			global.Input.mouse_click_start_x = get_struct_x_position(obj_game.level.start);
+			global.Input.mouse_click_start_y = get_struct_y_position(obj_game.level.start);	
 			audio_sound_gain(shootingSound,.7,30);
 		}
 		else{
 			if(power(get_struct_x_position(obj_game.level.start) - cursor_x, 2) + power(get_struct_y_position(obj_game.level.start) - cursor_y, 2) < power(level.start.r,2)){
-				editor_selected_object = level.start;
+				global.Game.editor_selected_object = level.start;
 			
 			}else if(power(level.endpoint.v2x - cursor_x, 2) + power(level.endpoint.v2y - cursor_y, 2) < power(level.endpoint.r,2)){
-				editor_selected_object = level.endpoint;
+				global.Game.editor_selected_object = level.endpoint;
 		
 			}
 			else{
 				for(var i = 0; i < array_length(level.components); i++){
 					if(	power(level.components[i].v2x - cursor_x, 2) + power(level.components[i].v2y - cursor_y, 2) < power(level.components[i].r,2)){
-						editor_selected_object = level.components[i]
+						global.Game.editor_selected_object = level.components[i]
 					}
 				}
-				if(editor_selected_object == noone && keyboard_check(vk_alt)){
-					editor_selected_object =  add_component_to_level(cursor_x, cursor_y, 10, "square");
+				if(global.Game.editor_selected_object == noone && keyboard_check(vk_alt)){
+					global.Game.editor_selected_object =  add_component_to_level(cursor_x, cursor_y, 10, "square");
 				}
-				if(editor_selected_object == noone && keyboard_check(vk_shift)){
-					editor_selected_object = infinity;
+				if(global.Game.editor_selected_object == noone && keyboard_check(vk_shift)){
+					global.Game.editor_selected_object = infinity;
 				}
 			}
-			if(is_struct( editor_selected_object)){
-				i_state.mouse_click_start_x = editor_selected_object.v2x;
-				i_state.mouse_click_start_y = editor_selected_object.v2y;
+			if(is_struct( global.Game.editor_selected_object)){
+				global.Input.mouse_click_start_x = global.Game.editor_selected_object.v2x;
+				global.Input.mouse_click_start_y = global.Game.editor_selected_object.v2y;
 			}else{
 					
-				i_state.mouse_click_start_x = cursor_x;
-				i_state.mouse_click_start_y = cursor_y;
+				global.Input.mouse_click_start_x = cursor_x;
+				global.Input.mouse_click_start_y = cursor_y;
 			}
 		}
-		i_state.launch_x = cursor_x - i_state.mouse_click_start_x;
-		i_state.launch_y = cursor_y - i_state.mouse_click_start_y;
-		last_mouse_x = window_mouse_get_x();
-		last_mouse_y = window_mouse_get_y();
+		global.Input.launch_x = cursor_x - global.Input.mouse_click_start_x;
+		global.Input.launch_y = cursor_y - global.Input.mouse_click_start_y;
+
 	}
-	if(mouse_check_button(mb_right) && room_frame - lastShot > baseShotDelay){
+	if(mouse_check_button(mb_right) && global.Game.roomFrame - global.Game.lastShot > global.Law.baseShotDelay){
 		with(obj_projectile){
 			if(obj_game.min_projectile == noone || projectile._id < obj_game.min_projectile.projectile._id){
 				obj_game.min_projectile = id;
@@ -460,22 +461,22 @@ function process_user_inputs(){
 		if(min_projectile != noone){
 			instance_destroy(min_projectile);
 			min_projectile = noone;
-			lastShot = room_frame;
+			global.Game.lastShot = global.Game.roomFrame;
 		}
-		stopTimer = fps/2;
+		global.Graphics.stopTimer = fps/2;
 	}
 	if(mouse_check_button_pressed(mb_right)){
-		if(editor_selected_object != noone){
-			editor_selected_object = noone;
+		if(global.Game.editor_selected_object != noone){
+			global.Game.editor_selected_object = noone;
 		}
 	}
 	if(global.editMode){
-	if(keyboard_check_released(vk_delete)){
-		if(editor_selected_object != noone  && editor_selected_object._id > 1){
-			remove_component_from_level(editor_selected_object);
-			editor_selected_object = noone;
+		if(keyboard_check_released(vk_delete)){
+			if(global.Game.editor_selected_object != noone  && global.Game.editor_selected_object._id > 1){
+				remove_component_from_level(global.Game.editor_selected_object);
+				global.Game.editor_selected_object = noone;
+			}
 		}
-	}
 		if(keyboard_check_released(vk_pageup)){
 			next_level(true);
 		}
@@ -494,12 +495,11 @@ function process_user_inputs(){
 	var dispRatio = room_height/view_hport[0];
 
 	if(shooting){
-		i_state.launch_x += i_state.d_x;
-		i_state.launch_y += i_state.d_y;
-		cursor_x = i_state.mouse_click_start_x + i_state.launch_x;
-		cursor_y = i_state.mouse_click_start_y + i_state.launch_y;
-		last_mouse_x = window_mouse_get_x();
-		last_mouse_y = window_mouse_get_y();
+		global.Input.launch_x += global.Input.d_x;
+		global.Input.launch_y += global.Input.d_y;
+		cursor_x = global.Input.mouse_click_start_x + global.Input.launch_x;
+		cursor_y = global.Input.mouse_click_start_y + global.Input.launch_y;
+
 		if(!global.editMode){
 			update_trajectory_preview();
 			if window_mouse_get_x() < 2 || window_mouse_get_x() > window_get_width()-2 || window_mouse_get_y() < 2 || window_mouse_get_y() > window_get_height()-2 {
@@ -528,38 +528,38 @@ function process_user_inputs(){
 		}
 		if(mouse_check_button(mb_left)){
 			if(!global.editMode){
-				if(room_frame > lastShot+shotDelay){
-					lastShot = room_frame;
-					create_projectile(get_struct_x_position(obj_game.level.start), get_struct_y_position(obj_game.level.start),i_state.launch_x, i_state.launch_y);
+				if(global.Game.roomFrame > global.Game.lastShot+global.Game.shotDelay){
+					global.Game.lastShot = global.Game.roomFrame;
+					create_projectile(get_struct_x_position(obj_game.level.start), get_struct_y_position(obj_game.level.start),global.Input.launch_x, global.Input.launch_y);
 					
-					//show_debug_message("shot launched\nX: " + string(level.start.v2x) + "\nY: " + string(level.start.v2y) + "\nVelocity: " + string(i_state.launch_x) +", " + string(i_state.launch_y));
+					//show_debug_message("shot launched\nX: " + string(level.start.v2x) + "\nY: " + string(level.start.v2y) + "\nVelocity: " + string(global.Input.launch_x) +", " + string(global.Input.launch_y));
 				}
 			}
 			else{
-				if(editor_selected_object == infinity){
-					level.start.v2x += i_state.d_x;
-					level.start.v2y += i_state.d_y;
-					level.endpoint.v2x += i_state.d_x;
-					level.endpoint.v2y += i_state.d_y;
+				if(global.Game.editor_selected_object == infinity){
+					level.start.v2x += global.Input.d_x;
+					level.start.v2y += global.Input.d_y;
+					level.endpoint.v2x += global.Input.d_x;
+					level.endpoint.v2y += global.Input.d_y;
 					for(var i = 0; i <array_length(level.components); i++){
-						level.components[i].v2x += i_state.d_x;
-						level.components[i].v2y += i_state.d_y;
+						level.components[i].v2x += global.Input.d_x;
+						level.components[i].v2y += global.Input.d_y;
 						
 					}
-				}else if(is_struct(editor_selected_object)){
+				}else if(is_struct(global.Game.editor_selected_object)){
 					
-					if(editor_selected_object._id > 0 && keyboard_check(vk_control)){
-						if(editor_selected_object._id == 1 && keyboard_check(vk_shift)){
-							editor_selected_object.tr = sqrt((power(i_state.launch_x,2) + power(i_state.launch_y,2)));
+					if(global.Game.editor_selected_object._id > 0 && keyboard_check(vk_control)){
+						if(global.Game.editor_selected_object._id == 1 && keyboard_check(vk_shift)){
+							global.Game.editor_selected_object.tr = sqrt((power(global.Input.launch_x,2) + power(global.Input.launch_y,2)));
 						}else{
-							editor_selected_object.r =sqrt((power(i_state.launch_x,2) + power(i_state.launch_y,2)));
+							global.Game.editor_selected_object.r =sqrt((power(global.Input.launch_x,2) + power(global.Input.launch_y,2)));
 						}
 					}else{
-						editor_selected_object.v2x = cursor_x;	
-						editor_selected_object.v2y = cursor_y;
+						global.Game.editor_selected_object.v2x = cursor_x;	
+						global.Game.editor_selected_object.v2y = cursor_y;
 					}
 					
-					update_struct(editor_selected_object);
+					update_struct(global.Game.editor_selected_object);
 				}
 			}
 		}else{
@@ -568,59 +568,58 @@ function process_user_inputs(){
 				shooting = false;
 			}
 			if(global.editMode){
-				editor_selected_object = noone;	
+				global.Game.editor_selected_object = noone;	
 				trigger_grid_update();
 			}
 		}
-		if((!mouseInWindow && global.inBrowser) ||(!keyboard_check(vk_shift) && !mouse_check_button(mb_left))){
+		if((!mouseInWindow && global.Law.inBrowser) ||(!keyboard_check(vk_shift) && !mouse_check_button(mb_left))){
 			audio_sound_gain(shootingSound,0,1000);
 			shooting = false;
 		}
-	}else if(abs(i_state.d_x) >0.1 || abs(i_state.d_y) > 0.1){
+	}else if(abs(global.Input.d_x) >0.1 || abs(global.Input.d_y) > 0.1){
 		if(window_mouse_get_locked() 
 		//&& (!os_type == os_android && os_type != os_ios)
 		){
-			cursor_x += i_state.d_x;
-			cursor_y += i_state.d_y;
+			cursor_x += global.Input.d_x;
+			cursor_y += global.Input.d_y;
 		}else{
 			cursor_x = mouse_x;
 			cursor_y = mouse_y;
 		}
-		i_state.launch_x = cursor_x - get_struct_x_position(obj_game.level.start);
-		i_state.launch_y = cursor_y - get_struct_y_position(obj_game.level.start);
-		last_mouse_x = window_mouse_get_x();
-		last_mouse_y = window_mouse_get_y();
+		global.Input.launch_x = cursor_x - get_struct_x_position(obj_game.level.start);
+		global.Input.launch_y = cursor_y - get_struct_y_position(obj_game.level.start);
+
 		if(!global.editMode){
 			update_trajectory_preview();
 		}
 	}
 }
 function ai_player(){
-	if(room_frame > lastShot+shotDelay){
+	if(global.Game.roomFrame > global.Game.lastShot+global.Game.shotDelay){
 		var baseXVector = -(level.endpoint.v2x-level.start.v2x)/2;
 		var baseYVector = (level.endpoint.v2y-level.start.v2y)/2;
 		for(var i = 0; i <array_length(level.components); i++){
 			baseXVector -= 	(level.components[i].v2x-level.start.v2x)/array_length(level.components)* (level.components[i].r+level.components[i].damage)/100;	
 			baseYVector += 	(level.components[i].v2y-level.start.v2y)/array_length(level.components) * (level.components[i].r+level.components[i].damage)/100;
 		}
-		cursor_x = level.start.v2x + i_state.launch_x;
-		cursor_y = level.start.v2y + i_state.launch_y;
-		if(i_state.launch_x == 0)
-			i_state.launch_x =  /*random_range(.2, .4)*/-.75 *baseXVector
-		if(i_state.launch_y == 0)
-			i_state.launch_y = 0
+		cursor_x = level.start.v2x + global.Input.launch_x;
+		cursor_y = level.start.v2y + global.Input.launch_y;
+		if(global.Input.launch_x == 0)
+			global.Input.launch_x =  /*random_range(.2, .4)*/-.75 *baseXVector
+		if(global.Input.launch_y == 0)
+			global.Input.launch_y = 0
 			//baseYVector*.75
 		
 		update_trajectory_preview();			
-		create_projectile(level.start.v2x, level.start.v2y, i_state.launch_x, i_state.launch_y);	
+		create_projectile(level.start.v2x, level.start.v2y, global.Input.launch_x, global.Input.launch_y);	
 		simShotCount++;
 			if(simShotCount>7){
 				simShotCount = 0;
-				i_state.launch_x =  random_range(.2, .4) *baseXVector
-				i_state.launch_y = random_range(.2, .4) *baseYVector
-				lastShot = room_frame+4*global.minFrameRate;
+				global.Input.launch_x =  random_range(.2, .4) *baseXVector
+				global.Input.launch_y = random_range(.2, .4) *baseYVector
+				global.Game.lastShot = global.Game.roomFrame+4*global.Law.physRate;
 			}else{
-				lastShot = room_frame;
+				global.Game.lastShot = global.Game.roomFrame;
 			}
 		}	
 }
