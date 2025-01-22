@@ -6,25 +6,19 @@
 //grid_update_curr_x = grid_update_start_x;
 //grid_update_curr_y = grid_update_start_y;
 //grid_update_pending = false;
-
+g_state = create_blank_game_state();
+i_state = create_blank_input_state();
+c_state = create_blank_camera_state();
+#region grid update arrays
 grid_updates = array_create(0);
 finished_grid_updates = array_create(0);
-
-
 spiral_grid_updates = array_create(0);
 finished_spiral_grid_updates = array_create(0);
-
 updated_grid_points = array_create(0);
+#endregion
 
-circle_precision_factor = 2;
 global.currentLevel = clamp(global.currentLevel,0,array_length(global.levels.array));
 level_init(global.levels.array[global.currentLevel]);
-mouse_click_start_x = -1;
-mouse_click_start_y = -1;
-d_x = 0;
-d_y = 0;
-launch_vector_x = 0;
-launch_vector_y = 0;
 
 grid_x_count = view_wport[0]/global.grid_size;
 grid_y_count = view_hport[0]/global.grid_size;

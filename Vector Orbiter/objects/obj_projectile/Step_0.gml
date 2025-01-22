@@ -7,12 +7,12 @@ if(multiTimer>=0){
 }
 frame++;
 projectile.frameMult = 0;
-apply_special_abilities(projectile);
 startTime = current_time;
 if(obj_game.levelComplete || !window_has_focus()){
 	log_projectile_performance_time(current_time-startTime);
 	return;
 }
+apply_special_abilities(projectile);
 //for(var i = 0; i< global.simRate; i++){
 increase_projectile_radius(projectile)
 var dist = apply_projectile_struct_interaction(projectile, obj_game.level.endpoint, startTime);

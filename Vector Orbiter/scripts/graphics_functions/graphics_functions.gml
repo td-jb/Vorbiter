@@ -19,7 +19,14 @@ function set_grid_shader(){
 	var p_f = ((room_frame)%((global.minFrameRate*4*pulseRate)))/(global.minFrameRate*4*pulseRate);
 	shader_set_uniform_f(cosP, p_f);
 }
-
+function create_vertex_format(){
+	
+	vertex_format_begin();
+	vertex_format_add_position_3d();
+	vertex_format_add_colour();
+	vertex_format_add_texcoord();
+	return vertex_format_end();
+}
 function create_sphere(_x, _y, _r, _precision ){
 
 	
@@ -609,12 +616,12 @@ function draw_components(_x, _y, _scale, _level){
 		gpu_set_zwriteenable(true)
 		gpu_set_ztestenable(true);
 	}
-	draw_set_circle_precision(32/circle_precision_factor)
+	draw_set_circle_precision(32/global.circle_precision_factor)
 	draw_set_alpha(1);
 	for(var i = 0; i < array_length(_level.components); i++){
 		switch(_level.components[i].name){
 			case "circle":
-				draw_set_circle_precision(power(2,ceil(log2(_level.components[i].dr)))/circle_precision_factor)
+				draw_set_circle_precision(power(2,ceil(log2(_level.components[i].dr)))/global.circle_precision_factor)
 				var baseRadiiSq = power((_level.endpoint.r)+(_level.components[i].r ),2);
 				var endDistSq = get_struct_square_distance(_level.endpoint, _level.components[i])-baseRadiiSq;
 				var combinedRadiiSq = power((_level.endpoint.dr)+(_level.components[i].dr),2)-baseRadiiSq;
@@ -717,7 +724,7 @@ function draw_projectiles(){
 			var scale = projectile.r/5;
 			var character = string_char_at(title,projectile._id%title_length+1)
 		}
-		var precision = power(2, ceil(log2(projectile.r)))/obj_game.circle_precision_factor;
+		var precision = power(2, ceil(log2(projectile.r)))/global.circle_precision_factor;
 		var hue  = (projectile.color +  ((1-projectile.mult)*global.hueMult))%256;
 		draw_set_color(make_color_hsv( hue, global.component_saturation, global.component_value))
 		for(var i = 2; i <array_length(x_trail); i++){
@@ -843,7 +850,7 @@ function draw_explosions(){
 function draw_start_point(_x, _y, _scale, _level){
 	set_gpu_depth_from_struct(_level.start);
 	draw_set_alpha(1);
-	draw_set_circle_precision(16/circle_precision_factor)
+	draw_set_circle_precision(16/global.circle_precision_factor)
 	var value = global.component_value* baseShotDelay/(shotDelay/2)
 	draw_set_color(make_color_hsv( color_get_hue(global.bg_color), global.component_saturation, value ));
 	
@@ -859,9 +866,9 @@ function draw_end_point(_x, _y, _scale, _level){
 		gpu_set_zwriteenable(false)
 		gpu_set_ztestenable(false);
 	}
-	draw_set_circle_precision(16/circle_precision_factor)
+	draw_set_circle_precision(16/global.circle_precision_factor)
 	set_gpu_depth_from_struct(level.endpoint);
-	draw_set_circle_precision(32/circle_precision_factor)
+	draw_set_circle_precision(32/global.circle_precision_factor)
 	draw_set_color(global.projectile_color);
 	if(reset)
 		draw_set_color(global.bad_color);

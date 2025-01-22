@@ -26,6 +26,27 @@ switch(menu_screen){
 			}
 	
 		}
+		break;
+	case MenuScreen.SELECT:
+		for(var i = 0; i < array_length(scoreButtons); i++){
+			var x_pos = (view_wport[0]/2)- (3*button_width/2) + i * button_width;
+			var y_pos = score_box_y + score_box_h + button_margin;
+			if(curs_x >x_pos && curs_x < x_pos + button_width && curs_y > y_pos && curs_y < y_pos + button_height){
+				selected_button = i;	
+			}
+	
+		}
+		break;	
+	case MenuScreen.SETTINGS:
+		for(var i = 0; i < array_length(scoreButtons); i++){
+			var x_pos = (view_wport[0]/2)- (3*button_width/2) + i * button_width;
+			var y_pos = score_box_y + score_box_h + button_margin;
+			if(curs_x >x_pos && curs_x < x_pos + button_width && curs_y > y_pos && curs_y < y_pos + button_height){
+				selected_button = i;	
+			}
+	
+		}
+		break;
 }
 if(selected_button >=0){
 	if(mouse_check_button_released(mb_left)){

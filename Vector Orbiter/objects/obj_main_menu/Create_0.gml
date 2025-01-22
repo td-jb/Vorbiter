@@ -5,6 +5,8 @@ buttons = ["Start"];
 buttonscripts = [new_game];
 scoreButtons = ["Previous Level", "Back", "Next Level"];
 scoreButtonScripts = [previous_score, back_to_menu, next_score];
+selectButtons = ["Previous Level", "Back", "Next Level"];
+selectButtonScripts = [previous_score, back_to_menu, next_score];
 if(global.score>0){
 	array_push(buttons, "Continue");
 	array_push(buttonscripts, continue_game);

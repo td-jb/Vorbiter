@@ -3,7 +3,7 @@
 
 function simulate_trajectory(start_x, start_y, launch_vector_x, launch_vector_y, x_array, y_array, r_array, m_array){
 	var starttime = current_time;
-	//show_debug_message("Trajectory Preview\nX: " + string(start_x) + "\nY: " + string(start_y) + "\nprojectile: " + string(launch_vector_x) +", " + string(launch_vector_y));
+	//show_debug_message("Trajectory Preview\nX: " + string(start_x) + "\nY: " + string(start_y) + "\nprojectile: " + string(i_state.launch_x) +", " + string(i_state.launch_y));
 
 	var projectile = {x_vel: launch_vector_x,
 		y_vel: launch_vector_y,
@@ -200,8 +200,8 @@ function projectile_boundary_check(_projectile){
 			}else{
 			
 			
-				obj_game.cursor_x =  newX + obj_game.launch_vector_x;
-				obj_game.cursor_y =  newY + obj_game.launch_vector_y;	
+				obj_game.cursor_x =  newX + obj_game.i_state.launch_x;
+				obj_game.cursor_y =  newY + obj_game.i_state.launch_y;	
 			}
 			alarm[0] = fps/4;
 			dead = true;

@@ -39,6 +39,29 @@ function save_player_data(){
 	}
 	
 }
+function create_blank_game_state(){
+	var new_state = {
+		
+	};	
+	return new_state;
+}
+function create_blank_camera_state(){
+	var new_state = {
+		
+	};	
+	return new_state;
+}
+function create_blank_input_state(){
+	var new_state = {
+		mouse_click_start_x: -1,
+		mouse_click_start_y: -1,
+		d_x: 0,
+		d_y: 0,
+		launch_x: 0,
+		launch_y: 0
+	};	
+	return new_state;
+}
 function load_player_data(){
 	if(file_exists("player.json") && !global.inBrowser){
 		var _buffer = buffer_load("player.json");

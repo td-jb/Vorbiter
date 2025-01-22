@@ -3,8 +3,8 @@
 function update_trajectory_preview(){
 	simulate_trajectory(get_struct_x_position(obj_game.level.start), 
 						get_struct_y_position(obj_game.level.start), 
-						obj_game.launch_vector_x, 
-						obj_game.launch_vector_y,
+						obj_game.i_state.launch_x, 
+						obj_game.i_state.launch_y,
 						obj_game.shot_preview_x, 
 						obj_game.shot_preview_y, 
 						obj_game.shot_preview_r, 
@@ -44,7 +44,6 @@ function restart_level(){
 		instance_destroy();
 	}
 	level_init(obj_game.level);
-	obj_game.room_frame = 0;
 	obj_game.spiral_grid_updates= array_create(0);
 	obj_game.grid_updates= array_create(0);
 	obj_game.last_shot_position = array_create(2, infinity);
@@ -65,7 +64,7 @@ function level_end_check(){
 			pulseRate = 1;
 			levelComplete = true;
 			completeTime = room_frame;
-			mouse_click_start_x = mouse_click_start_y = -1;
+			i_state.mouse_click_start_x = i_state.mouse_click_start_y = -1;
 			audio_play_sound(Victory,0,false, 0.8);
 			audio_play_sound(Endplosion,0,false, 0.7);
 			audio_sound_gain(shootingSound,0,1000);
@@ -156,6 +155,7 @@ function end_postgame(){
 	postGame = false;
 	room_frame = 0;
 	lastShot = 0;
+	obj_game.overtime = 0;
 	global.projectileCount = 0;
 	global.liveProjectiles = 0;
 	
@@ -352,13 +352,13 @@ function set_cursor_delta(){
 	//else if (room == game_room){
 	//	window_set_cursor(cr_none);	
 	//}
-	d_x = (window_mouse_get_x()- window_get_width()/2)* global.screenScale;
-	d_y = (window_mouse_get_y() - window_get_height()/2)* global.screenScale;
+	i_state.d_x = (window_mouse_get_x()- window_get_width()/2)* global.screenScale;
+	i_state.d_y = (window_mouse_get_y() - window_get_height()/2)* global.screenScale;
 	if(room==game_room && os_browser == browser_not_a_browser){
 		window_mouse_set(window_get_width()/2,window_get_height()/2);
 	}else if(room==game_room){
-		d_x = window_mouse_get_delta_x() * global.screenScale;
-		d_y = window_mouse_get_delta_y() * global.screenScale;
+		i_state.d_x = window_mouse_get_delta_x() * global.screenScale;
+		i_state.d_y = window_mouse_get_delta_y() * global.screenScale;
 	}
 	
 }
@@ -381,9 +381,8 @@ function process_user_inputs(){
 	}
 	if(!global.editMode){
 		if(keyboard_check(vk_control)){
-			d_x = d_x/4;
-			d_y = d_y/4;
-			
+			i_state.d_x = i_state.d_x/(4*global.screenScale);
+			i_state.d_y = i_state.d_y/(4*global.screenScale);
 		}
 		if(keyboard_check(vk_space)){
 			global.boost = true;
@@ -401,11 +400,11 @@ function process_user_inputs(){
 			cursor_x = last_shot_position[0];
 			cursor_y = last_shot_position[1];
 			shooting = true;
-			mouse_click_start_x = get_struct_x_position(obj_game.level.start);
-			mouse_click_start_y = get_struct_y_position(obj_game.level.start);
-			launch_vector_x = cursor_x-mouse_click_start_x;
-			launch_vector_y = cursor_y-mouse_click_start_y;
-			create_projectile(mouse_click_start_x, mouse_click_start_y, launch_vector_x, launch_vector_y);
+			i_state.mouse_click_start_x = get_struct_x_position(obj_game.level.start);
+			i_state.mouse_click_start_y = get_struct_y_position(obj_game.level.start);
+			i_state.launch_x = cursor_x-i_state.mouse_click_start_x;
+			i_state.launch_y = cursor_y-i_state.mouse_click_start_y;
+			create_projectile(i_state.mouse_click_start_x, i_state.mouse_click_start_y, i_state.launch_x, i_state.launch_y);
 			audio_sound_gain(shootingSound,.7,30);
 			lastShot = room_frame;
 		}
@@ -413,8 +412,8 @@ function process_user_inputs(){
 	if(mouse_check_button_pressed(mb_left)){
 		shooting = true;
 		if(!global.editMode){
-			mouse_click_start_x = get_struct_x_position(obj_game.level.start);
-			mouse_click_start_y = get_struct_y_position(obj_game.level.start);	
+			i_state.mouse_click_start_x = get_struct_x_position(obj_game.level.start);
+			i_state.mouse_click_start_y = get_struct_y_position(obj_game.level.start);	
 			audio_sound_gain(shootingSound,.7,30);
 		}
 		else{
@@ -439,16 +438,16 @@ function process_user_inputs(){
 				}
 			}
 			if(is_struct( editor_selected_object)){
-				mouse_click_start_x = editor_selected_object.v2x;
-				mouse_click_start_y = editor_selected_object.v2y;
+				i_state.mouse_click_start_x = editor_selected_object.v2x;
+				i_state.mouse_click_start_y = editor_selected_object.v2y;
 			}else{
 					
-				mouse_click_start_x = cursor_x;
-				mouse_click_start_y = cursor_y;
+				i_state.mouse_click_start_x = cursor_x;
+				i_state.mouse_click_start_y = cursor_y;
 			}
 		}
-		launch_vector_x = cursor_x - mouse_click_start_x;
-		launch_vector_y = cursor_y - mouse_click_start_y;
+		i_state.launch_x = cursor_x - i_state.mouse_click_start_x;
+		i_state.launch_y = cursor_y - i_state.mouse_click_start_y;
 		last_mouse_x = window_mouse_get_x();
 		last_mouse_y = window_mouse_get_y();
 	}
@@ -495,10 +494,10 @@ function process_user_inputs(){
 	var dispRatio = room_height/view_hport[0];
 
 	if(shooting){
-		launch_vector_x += d_x;
-		launch_vector_y += d_y;
-		cursor_x = mouse_click_start_x + launch_vector_x;
-		cursor_y = mouse_click_start_y + launch_vector_y;
+		i_state.launch_x += i_state.d_x;
+		i_state.launch_y += i_state.d_y;
+		cursor_x = i_state.mouse_click_start_x + i_state.launch_x;
+		cursor_y = i_state.mouse_click_start_y + i_state.launch_y;
 		last_mouse_x = window_mouse_get_x();
 		last_mouse_y = window_mouse_get_y();
 		if(!global.editMode){
@@ -531,29 +530,29 @@ function process_user_inputs(){
 			if(!global.editMode){
 				if(room_frame > lastShot+shotDelay){
 					lastShot = room_frame;
-					create_projectile(get_struct_x_position(obj_game.level.start), get_struct_y_position(obj_game.level.start),launch_vector_x, launch_vector_y);
+					create_projectile(get_struct_x_position(obj_game.level.start), get_struct_y_position(obj_game.level.start),i_state.launch_x, i_state.launch_y);
 					
-					//show_debug_message("shot launched\nX: " + string(level.start.v2x) + "\nY: " + string(level.start.v2y) + "\nVelocity: " + string(launch_vector_x) +", " + string(launch_vector_y));
+					//show_debug_message("shot launched\nX: " + string(level.start.v2x) + "\nY: " + string(level.start.v2y) + "\nVelocity: " + string(i_state.launch_x) +", " + string(i_state.launch_y));
 				}
 			}
 			else{
 				if(editor_selected_object == infinity){
-					level.start.v2x += d_x;
-					level.start.v2y += d_y;
-					level.endpoint.v2x += d_x;
-					level.endpoint.v2y += d_y;
+					level.start.v2x += i_state.d_x;
+					level.start.v2y += i_state.d_y;
+					level.endpoint.v2x += i_state.d_x;
+					level.endpoint.v2y += i_state.d_y;
 					for(var i = 0; i <array_length(level.components); i++){
-						level.components[i].v2x += d_x;
-						level.components[i].v2y += d_y;
+						level.components[i].v2x += i_state.d_x;
+						level.components[i].v2y += i_state.d_y;
 						
 					}
 				}else if(is_struct(editor_selected_object)){
 					
 					if(editor_selected_object._id > 0 && keyboard_check(vk_control)){
 						if(editor_selected_object._id == 1 && keyboard_check(vk_shift)){
-							editor_selected_object.tr = sqrt((power(launch_vector_x,2) + power(launch_vector_y,2)));
+							editor_selected_object.tr = sqrt((power(i_state.launch_x,2) + power(i_state.launch_y,2)));
 						}else{
-							editor_selected_object.r =sqrt((power(launch_vector_x,2) + power(launch_vector_y,2)));
+							editor_selected_object.r =sqrt((power(i_state.launch_x,2) + power(i_state.launch_y,2)));
 						}
 					}else{
 						editor_selected_object.v2x = cursor_x;	
@@ -577,18 +576,18 @@ function process_user_inputs(){
 			audio_sound_gain(shootingSound,0,1000);
 			shooting = false;
 		}
-	}else if(abs(d_x) >0.1 || abs(d_y) > 0.1){
+	}else if(abs(i_state.d_x) >0.1 || abs(i_state.d_y) > 0.1){
 		if(window_mouse_get_locked() 
 		//&& (!os_type == os_android && os_type != os_ios)
 		){
-			cursor_x += d_x;
-			cursor_y += d_y;
+			cursor_x += i_state.d_x;
+			cursor_y += i_state.d_y;
 		}else{
 			cursor_x = mouse_x;
 			cursor_y = mouse_y;
 		}
-		launch_vector_x = cursor_x - get_struct_x_position(obj_game.level.start);
-		launch_vector_y = cursor_y - get_struct_y_position(obj_game.level.start);
+		i_state.launch_x = cursor_x - get_struct_x_position(obj_game.level.start);
+		i_state.launch_y = cursor_y - get_struct_y_position(obj_game.level.start);
 		last_mouse_x = window_mouse_get_x();
 		last_mouse_y = window_mouse_get_y();
 		if(!global.editMode){
@@ -604,21 +603,21 @@ function ai_player(){
 			baseXVector -= 	(level.components[i].v2x-level.start.v2x)/array_length(level.components)* (level.components[i].r+level.components[i].damage)/100;	
 			baseYVector += 	(level.components[i].v2y-level.start.v2y)/array_length(level.components) * (level.components[i].r+level.components[i].damage)/100;
 		}
-		cursor_x = level.start.v2x + launch_vector_x;
-		cursor_y = level.start.v2y + launch_vector_y;
-		if(launch_vector_x == 0)
-			launch_vector_x =  /*random_range(.2, .4)*/-.75 *baseXVector
-		if(launch_vector_y == 0)
-			launch_vector_y = 0
+		cursor_x = level.start.v2x + i_state.launch_x;
+		cursor_y = level.start.v2y + i_state.launch_y;
+		if(i_state.launch_x == 0)
+			i_state.launch_x =  /*random_range(.2, .4)*/-.75 *baseXVector
+		if(i_state.launch_y == 0)
+			i_state.launch_y = 0
 			//baseYVector*.75
 		
 		update_trajectory_preview();			
-		create_projectile(level.start.v2x, level.start.v2y, launch_vector_x, launch_vector_y);	
+		create_projectile(level.start.v2x, level.start.v2y, i_state.launch_x, i_state.launch_y);	
 		simShotCount++;
 			if(simShotCount>7){
 				simShotCount = 0;
-				launch_vector_x =  random_range(.2, .4) *baseXVector
-				launch_vector_y = random_range(.2, .4) *baseYVector
+				i_state.launch_x =  random_range(.2, .4) *baseXVector
+				i_state.launch_y = random_range(.2, .4) *baseYVector
 				lastShot = room_frame+4*global.minFrameRate;
 			}else{
 				lastShot = room_frame;
