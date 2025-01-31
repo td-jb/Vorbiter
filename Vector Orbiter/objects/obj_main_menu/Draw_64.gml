@@ -11,15 +11,15 @@ if(global.intro){
 		
 		alpha = 1-((introPerc-0.9) * 20)	
 	}	
-	var spr_width = sprite_get_width(logo_sketch);
-	var spr_height = sprite_get_height(logo_sketch);
+	var spr_width = sprite_get_width(logo_sketch_alt_2);
+	var spr_height = sprite_get_height(logo_sketch_alt_2);
 	var spr_scale = 0.6* (display_get_gui_height()/spr_height);
 	var true_width = spr_scale * spr_width;
-	draw_sprite_ext(logo_sketch,0,view_wport[0]/2 - true_width/2, view_hport[0]/2 - (spr_height * spr_scale)/2,spr_scale,spr_scale,0,c_white,alpha);
+	draw_sprite_ext(logo_sketch_alt_2,0,view_wport[0]/2 - true_width/2, view_hport[0]/2 - (spr_height * spr_scale)/2,spr_scale,spr_scale,0,c_white,alpha);
 	return;	
 }
 if(global.debugMode< DebugMode.NONE)
-draw_text(cursor_x, cursor_y, "x: " + string(cursor_x) + "\ny: " + string(cursor_y));
+draw_text(global.Input.cursorX, global.Input.cursorY, "x: " + string(global.Input.cursorX) + "\ny: " + string(global.Input.cursorY));
 
 
 if(!global.show_ui)

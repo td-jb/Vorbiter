@@ -5,7 +5,7 @@ if(global.intro || !global.show_ui)
 var screenMidX = display_get_gui_width()/2;
 var screenMidY= display_get_gui_height()/2;
 
-var levelName =  "Sector " +string( global.currentLevel);
+var levelName =  "Sector " +string( global.currentLevel+ 1);
 var stringWidth = string_width(levelName);
 var stringHeight = string_height(levelName);
 if(!window_has_focus()){
@@ -28,7 +28,7 @@ if(postGame){
 }else{
 	draw_text(screenMidX - stringWidth/2, stringHeight/2, levelName);
 }
-if(room != game_room)
+if(instance_exists(obj_main_menu))
 	return;
 
 var bottom_right_x = display_get_gui_width() -textMargin;
@@ -57,7 +57,7 @@ if(!global.editMode){
 		for(var i = 0; i < 5; i++){
 			var x_vector = sin( random_range(0,2*pi))*row_height/2;
 			var y_vector = cos(random_range(0,2*pi))* row_height/2;
-			draw_set_color(global.projectile_color);
+			draw_set_color(global.projectileColor);
 			draw_set_alpha(alpha);
 			var _x = bottom_right_x - row_width * 0.33;
 			var _y = bottom_right_y - row_height * 2 + row_height/2;
@@ -70,7 +70,7 @@ if(!global.editMode){
 		draw_sprite_ext(left_click_sprite,0, bottom_right_x - row_width,bottom_right_y - row_height * 3,sprite_scale,sprite_scale, 0,c_white, 1);
 		var _x = bottom_right_x - row_width * 0.25;
 		var _y = bottom_right_y - row_height * 3 + row_height/2;
-		draw_set_color(global.projectile_color);
+		draw_set_color(global.projectileColor);
 		draw_circle(_x,_y,row_height/4,false);
 		var _x2 = bottom_right_x - row_width * 0.5;
 		var iteration_count = 100;
@@ -94,9 +94,10 @@ if(!global.editMode){
 	var completionPercentage = (obj_game.level.endpoint.r-obj_game.level.endpoint.tr);
 	var compBoxWidth = display_get_gui_width()/4;
 	var compBoxHeight = row_height/2;
+	draw_set_alpha(0.3);
 	draw_set_color(c_black);
 	draw_rectangle(bottom_right_x - compBoxWidth - textMargin, textMargin, bottom_right_x - textMargin, textMargin + compBoxHeight, false);
-	draw_set_color(global.good_color);
+	draw_set_color(global.goodColor);
 	draw_rectangle(bottom_right_x - compBoxWidth - textMargin, textMargin, bottom_right_x - textMargin, textMargin + compBoxHeight, true);
 
 	if(obj_game.level.endpoint.damage >0){
@@ -104,4 +105,5 @@ if(!global.editMode){
 		draw_rectangle(bottom_right_x - compBoxWidth - textMargin, textMargin, bottom_right_x - textMargin - (compBoxWidth * (1-completionPercentage)), textMargin + compBoxHeight, false);
 	
 	}
+	draw_set_alpha(1);
 }

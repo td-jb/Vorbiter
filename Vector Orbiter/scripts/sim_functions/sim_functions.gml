@@ -3,7 +3,6 @@
 
 function simulate_trajectory(start_x, start_y, launch_vector_x, launch_vector_y, x_array, y_array, r_array, m_array){
 	var starttime = current_time;
-	//show_debug_message("Trajectory Preview\nX: " + string(start_x) + "\nY: " + string(start_y) + "\nprojectile: " + string(global.Input.launch_x) +", " + string(global.Input.launch_y));
 
 	var projectile = {x_vel: launch_vector_x,
 		y_vel: launch_vector_y,
@@ -13,64 +12,93 @@ function simulate_trajectory(start_x, start_y, launch_vector_x, launch_vector_y,
 		frameMult: 0,
 		r: global.Law.pRadius}
 	
+	show_debug_message("Trajectory Preview\nprojectile: " +json_stringify(projectile, true));
 	hit_list = [];
-	for(var k = 0; k <array_length(x_array)*global.Law.trajectorySampleRate; k +=1){
+	for(var k = 0; k <array_length(x_array)*global.Law.trajectorySampleRate; k ++){
 		projectile.frameMult = 0;
 		increase_projectile_radius(projectile);
-		var dist = apply_gravitational_acceleration(obj_game.level.endpoint,projectile.v2x,projectile.v2y,get_projectile_mass(projectile.r),projectile);
-		apply_flyby_mod(obj_game.level.endpoint, dist,projectile.r, projectile,true);
-		if( collision_check(obj_game.level.endpoint,dist,projectile.r)){
+		var dist = apply_gravitational_acceleration(obj_game.level.endpoint, projectile);
+		apply_flyby_mod(obj_game.level.endpoint, dist, projectile.r, projectile,true);
+		if( collision_check(obj_game.level.endpoint,dist, projectile.r)){
 			
-			projectile.v2x += (projectile.x_vel/60);
-			projectile.v2y += (projectile.y_vel /60);
-			while(k < array_length(x_array)*global.Law.trajectorySampleRate){
+			projectile.v2x += (projectile.x_vel/global.Law.physRate);
+			projectile.v2y += (projectile.y_vel/global.Law.physRate);
+			//if(k%global.Law.trajectorySampleRate == 0)
+				//x_array[floor(k)/global.Law.trajectorySampleRate] = {v2x: projectile.v2x, v2y: projectile.v2y, r: projectile.r, mult: projectile.mult};
 				x_array[floor(k)/global.Law.trajectorySampleRate] = projectile.v2x;
 				y_array[floor(k)/global.Law.trajectorySampleRate] = projectile.v2y;
 				r_array[floor(k)/global.Law.trajectorySampleRate] = projectile.r;
 				m_array[floor(k)/global.Law.trajectorySampleRate] = projectile.mult;
+			//x_array[floor(k)/global.Law.trajectorySampleRate] = [projectile.v2x, projectile.v2y, projectile.r,  projectile.mult];
+
+			k++;
+			while(k < array_length(x_array)*global.Law.trajectorySampleRate){
+				//x_array[floor(k)/global.Law.trajectorySampleRate] = -1;
+				x_array[floor(k)/global.Law.trajectorySampleRate] = -1;
+				y_array[floor(k)/global.Law.trajectorySampleRate] = -1;
+				r_array[floor(k)/global.Law.trajectorySampleRate] = -1;
+				m_array[floor(k)/global.Law.trajectorySampleRate] = -1;
 				k++;
+				
 			}
 			return;
 		
 		}
 		for(var i= 0; i < array_length(obj_game.level.components); i++){
 			
-			dist = apply_gravitational_acceleration(obj_game.level.components[i], projectile.v2x,projectile.v2y,get_projectile_mass(projectile.r),projectile) ;
+			dist = apply_gravitational_acceleration(obj_game.level.components[i], projectile) ;
 			apply_flyby_mod(obj_game.level.components[i], dist,projectile.r, projectile,true);
 			if( struct_collision_check(projectile, obj_game.level.components[i])){
 			
-				projectile.v2x += (projectile.x_vel/60);
-				projectile.v2y += (projectile.y_vel /60);
+				projectile.v2x += (projectile.x_vel /global.Law.physRate);
+				projectile.v2y += (projectile.y_vel /global.Law.physRate);
+				//if(k%global.Law.trajectorySampleRate == 0)
+				//x_array[floor(k)/global.Law.trajectorySampleRate] = [projectile.v2x, projectile.v2y, projectile.r,  projectile.mult];
+				x_array[floor(k)/global.Law.trajectorySampleRate] = projectile.v2x;
+				y_array[floor(k)/global.Law.trajectorySampleRate] = projectile.v2y;
+				r_array[floor(k)/global.Law.trajectorySampleRate] = projectile.r;
+				m_array[floor(k)/global.Law.trajectorySampleRate] = projectile.mult;
+				k++;
 				while(k < array_length(x_array)*global.Law.trajectorySampleRate){
 					
-				
-					x_array[floor(k)/global.Law.trajectorySampleRate] = projectile.v2x;
-					y_array[floor(k)/global.Law.trajectorySampleRate] = projectile.v2y;
-					r_array[floor(k)/global.Law.trajectorySampleRate] =projectile.r;
-					m_array[floor(k)/global.Law.trajectorySampleRate] = projectile.mult;
+					x_array[floor(k)/global.Law.trajectorySampleRate] = -1;
+					y_array[floor(k)/global.Law.trajectorySampleRate] = -1;
+					r_array[floor(k)/global.Law.trajectorySampleRate] = -1;
+					m_array[floor(k)/global.Law.trajectorySampleRate] = -1;
 					k++;
 				}
 				return;
 		
 			}
 		}
-		projectile.v2x += (projectile.x_vel/60);
-		projectile.v2y += (projectile.y_vel/60);
+		projectile.v2x += (projectile.x_vel/global.Law.physRate);
+		projectile.v2y += (projectile.y_vel/global.Law.physRate);
+		//if(k%global.Law.trajectorySampleRate == 0)
+		//x_array[floor(k)/global.Law.trajectorySampleRate] = [projectile.v2x, projectile.v2y, projectile.r,  projectile.mult];
 		x_array[floor(k)/global.Law.trajectorySampleRate] = projectile.v2x;
 		y_array[floor(k)/global.Law.trajectorySampleRate] = projectile.v2y;
-		r_array[floor(k)/global.Law.trajectorySampleRate] =projectile.r;
+		r_array[floor(k)/global.Law.trajectorySampleRate] = projectile.r;
 		m_array[floor(k)/global.Law.trajectorySampleRate] = projectile.mult;
 	}
 	log_trajectory_performance_time( current_time - starttime);
 }
-function apply_gravitational_acceleration(obj_struct, subj_x, subj_y, subj_mass, subj_projectile){
-	
-	var end_dist_x = ( obj_struct.v2x - subj_x);
-	var end_dist_y = (obj_struct.v2y - subj_y);
+function apply_gravitational_acceleration(obj_struct,  subj_projectile){
+	var subj_x = subj_projectile.v2x;
+	var subj_y = subj_projectile.v2y;
+	var subj_mass = get_projectile_mass(subj_projectile.r);
+	var end_dist_x = (get_struct_x_position( obj_struct) - subj_x);
+	var end_dist_y = (get_struct_y_position( obj_struct) - subj_y);
 	var dist =get_square_distance(obj_struct, subj_x, subj_y);
 	if(dist == 0)
 		return dist;
 	var ratio = get_gravitational_force(obj_struct, dist, subj_mass);
+	if(global.Law.momentum){
+		ratio /= subj_mass;	
+		ratio *= 150;
+	}
+	//if(id == obj_projectile)
+	//	force += ratio;
+	
 	var truedist = sqrt(dist);
 	var x_ratio = end_dist_x/truedist;
 	var y_ratio =end_dist_y/truedist;
@@ -81,7 +109,7 @@ function apply_gravitational_acceleration(obj_struct, subj_x, subj_y, subj_mass,
 }
 function increase_projectile_radius(_projectile){
 	var modifier = ((2/(60) * (0.1*_projectile.r))* global.simRate);
-	if(global.boost || global.brake){
+	if(global.Input.boost || global.Input.brake){
 		if(_projectile.r > global.Law.pRadius)
 			_projectile.r -= modifier;
 		
@@ -112,15 +140,16 @@ function apply_flyby_mod(obj_struct, dist, projectile_radius, vel, preview = fal
 			array_push(hit_list,obj_struct._id);
 		}
 			var prevMult = vel.mult;
-			vel.frameMult ++;	
-			vel.mult += global.Law.multiplierRate*vel.frameMult*array_length(hit_list) * ratio;
+			vel.frameMult ++;
+			var bonus =  global.Law.multiplierRate*vel.frameMult*array_length(hit_list) * ratio
+			vel.mult += bonus;
 			var boostlimiter =500;
 			var x_vel_mod = vel.x_vel*ratio/boostlimiter;
 			var y_vel_mod = vel.y_vel*ratio/boostlimiter;
 			if(global.normalizeFlybyBoost && ratio > 0.8){
 				var v_mag = sqrt(power(vel.x_vel,2) + power(vel.y_vel,2));
-				var delta_x = (obj_struct.v2x - vel.x_pos);
-				var delta_y = obj_struct.v2y - vel.y_pos;
+				var delta_x = (get_struct_x_position(obj_struct) - vel.x_pos);
+				var delta_y = get_struct_y_position(obj_struct) - vel.y_pos;
 				var sin_theta = delta_x/sqrt_dist;
 				var cos_theta = delta_y/sqrt_dist;
 				x_vel_mod = (sin_theta*v_mag)*(vel.mult/boostlimiter);
@@ -132,7 +161,7 @@ function apply_flyby_mod(obj_struct, dist, projectile_radius, vel, preview = fal
 			multiTimer = multiLifespan;
 			multi_x = x;
 			multi_y = y;
-			obj_game.total_multiplier += global.Law.multiplierRate*vel.frameMult*array_length(hit_list) * ratio;	
+			obj_game.total_multiplier += bonus;	
 		}else{
 		}
 		
@@ -140,11 +169,11 @@ function apply_flyby_mod(obj_struct, dist, projectile_radius, vel, preview = fal
 }
 function apply_special_abilities(_projectile){
 	
-	if(global.boost && projectile.r > global.Law.pRadius){
+	if(global.Input.boost && projectile.r > global.Law.pRadius){
 		projectile.x_vel += projectile.x_vel * global.Law.boostMod;	
 		projectile.y_vel += projectile.y_vel * global.Law.boostMod;	
 	
-	}else if(global.brake&& projectile.r > global.Law.pRadius){
+	}else if(global.Input.brake&& projectile.r > global.Law.pRadius){
 		projectile.x_vel -= projectile.x_vel * global.Law.brakeMod;	
 		projectile.y_vel -= projectile.y_vel * global.Law.brakeMod;	
 	}
@@ -200,18 +229,16 @@ function projectile_boundary_check(_projectile){
 			}else{
 			
 			
-				obj_game.cursor_x =  newX + global.Input.launch_x;
-				obj_game.cursor_y =  newY + global.Input.launch_y;	
+				global.Input.cursorX =  newX + global.Input.launch_x;
+				global.Input.cursorY =  newY + global.Input.launch_y;	
 			}
 			alarm[0] = fps/4;
 			dead = true;
 			
 		}else{
 			global.Graphics.stopTimer = 60;
-			//if(instance_exists(bounceSound))
-			//audio_sound_pitch(bounceSound, pitch);
-			//projectile.x_vel = (-projectile.x_vel * random_range(0.9,1.2));
-			//projectile.y_vel = (-projectile.y_vel * random_range(0.9,1.2));
+			if(!global.Law.stableBoundary)
+				shift_level_elements(-projectile.x_vel/10, -projectile.y_vel/10, false);
 			instance_destroy();
 		}
 		
@@ -225,14 +252,14 @@ function projectile_boundary_check(_projectile){
 
 function apply_projectile_velocity(_projectile){
 	
-	projectile.v2x += (projectile.x_vel * global.simRate/60);
-	projectile.v2y += (projectile.y_vel * global.simRate/60);
+	projectile.v2x += (projectile.x_vel * global.simRate/global.Law.physRate);
+	projectile.v2y += (projectile.y_vel * global.simRate/global.Law.physRate);
 	x = projectile.v2x;
 	y = projectile.v2y;
 }
 function set_projectile_engine_sound(_dist){
-	var enginePitch = (global.Law.sqPlayRadius/(_dist))/2;
-	if(global.brake || global.boost){
+	var enginePitch = clamp((global.Law.sqPlayRadius/(_dist)),0.1,10);
+	if(global.Input.brake || global.Input.boost){
 		enginePitch *= 0.25;	
 	}
 	if((engineSound) != noone){
@@ -240,14 +267,14 @@ function set_projectile_engine_sound(_dist){
 	}
 	else{
 		if(global.liveProjectiles < 150){
-			engineSound = audio_play_sound(Engine,global.liveProjectiles,true, 0.5);
+			engineSound = audio_play_sound(Engine,global.liveProjectiles,true, 0.2);
 		}
 	}	
 }
 
 function apply_projectile_struct_interaction(_projectile, _obj_struct, startTime){
-	var dist =apply_gravitational_acceleration(_obj_struct , projectile.v2x, projectile.v2y,get_projectile_mass(projectile.r), projectile);
-	apply_flyby_mod(_obj_struct,dist,projectile.r, projectile);
+	var dist = apply_gravitational_acceleration(_obj_struct, _projectile);
+	apply_flyby_mod(_obj_struct,dist,_projectile.r, projectile);
 	var _square_hit = true;
 	if(_obj_struct == teleport_target){
 		_square_hit = false;
@@ -262,19 +289,20 @@ function apply_projectile_struct_interaction(_projectile, _obj_struct, startTime
 			}else{
 				audio_sound_pitch(obj_game.endSound, 1);
 			}
-			var goodSound =  audio_play_sound(GoodSound, 0, false, 0.5);
-			projectile.color = color_get_hue(global.good_color);
+			var goodSound =  audio_play_sound_on(obj_game.endEmitter,GoodSound,  false,0, 0.25);
+			projectile.color = color_get_hue(global.goodColor);
 			points =   pi *(power(projectile.r, 2) * power(projectile.mult,2));
 			//var pitch = 1/log10(points/10000);
 			//audio_sound_pitch(goodSound, pitch);
 			add_points(points);
 		}else if(_obj_struct.name !="square"){
 			projectile.color = global.Settings.neutralHue.value;
-			audio_play_sound(BadSound, 0, false, 0.5);
+			var badsound = audio_play_sound_on(obj_game.endEmitter,BadSound,  false,0, 0.25);
+			audio_sound_pitch(badsound, 0.8);
 			var endDistSquare = power(get_struct_x_position( _obj_struct) - get_struct_x_position( obj_game.level.endpoint), 2) + power(get_struct_y_position( _obj_struct)- get_struct_y_position( obj_game.level.endpoint), 2);
-			var startDistSq = power(_obj_struct.v2x - get_struct_x_position( obj_game.level.start), 2) + power(_obj_struct.v2y -get_struct_y_position( obj_game.level.start), 2);
-			var radSquare = power(obj_game.level.endpoint.r - obj_game.level.endpoint.damage + _obj_struct.r +_obj_struct.damage, 2)
-			var startRadSquare = power(obj_game.level.start.r + _obj_struct.r + _obj_struct.damage, 2)
+			var startDistSq = power(get_struct_x_position(_obj_struct) - get_struct_x_position( obj_game.level.start), 2) + power(get_struct_y_position(_obj_struct) -get_struct_y_position( obj_game.level.start), 2);
+			var radSquare = power(obj_game.level.endpoint.dr + _obj_struct.dr, 2)
+			var startRadSquare = power(obj_game.level.start.r + _obj_struct.dr, 2)
 			update_trajectory_preview();
 			instance_destroy();
 			if(radSquare > endDistSquare || startRadSquare >= startDistSq){
@@ -287,8 +315,8 @@ function apply_projectile_struct_interaction(_projectile, _obj_struct, startTime
 				var start_id = _obj_struct._id;
 				for(var i = 0; i < array_length( obj_game.level.components); i++){
 					if(obj_game.level.components[i]._id != start_id && obj_game.level.components[i].name == "square"){
-						projectile.v2x = obj_game.level.components[i].v2x;
-						projectile.v2y = obj_game.level.components[i].v2y;
+						projectile.v2x =  get_struct_x_position(obj_game.level.components[i]);
+						projectile.v2y =  get_struct_y_position(obj_game.level.components[i]);
 						//create_time = current_time;
 						teleport_target = obj_game.level.components[i];
 						break;
@@ -308,7 +336,7 @@ function apply_projectile_struct_interaction(_projectile, _obj_struct, startTime
 	return dist;
 }
 function get_projectile_mass(radius){
-	return(radius) + global.Law.pMassFactor;
+	return(radius + global.Law.pMassFactor);
 }
 
 function get_struct_square_distance(obj_struct, subj_struct){
@@ -330,9 +358,10 @@ function get_actual_radius(obj_struct){
 			true_r = obj_struct.r - obj_struct.damage;
 		}
 		return true_r;
-	}else{
-		return obj_struct.r;	
-	}
+	}else if(struct_exists(obj_struct,"r")){
+		return obj_struct.r;
+	}else
+		return 0;
 	
 }
 function struct_collision_check(subj_struct, obj_struct){
@@ -361,7 +390,7 @@ function struct_collision_check(subj_struct, obj_struct){
 			//+  sin_x * subj_r;
 			var circ_y = get_struct_y_position(subj_struct)
 			//+ cos_x * subj_r;
-			var sq_verts = [obj_struct.v2x - obj_struct.r, obj_struct.v2y - obj_struct.r, obj_struct.v2x + obj_struct.r, obj_struct.v2y + obj_struct.r];
+			var sq_verts = [get_struct_x_position( obj_struct) - obj_struct.r, get_struct_y_position( obj_struct) - obj_struct.r, get_struct_x_position( obj_struct) + obj_struct.r, get_struct_y_position( obj_struct) + obj_struct.r];
 			if(circ_x > sq_verts[0] && circ_x < sq_verts[2] && circ_y > sq_verts[1] && circ_y < sq_verts[3]){
 				return true;	
 			}else
@@ -379,7 +408,7 @@ function boundary_collision_check(subj_struct, overlap = false){
 	if(overlap)
 		modifier = -1;
 	var r = get_actual_radius(subj_struct) * modifier;
-	var dist = power(get_struct_x_position(subj_struct) + get_struct_y_position + r, 2 );	
+	var dist = power(get_struct_x_position(subj_struct) + get_struct_y_position(subj_struct) + r, 2 );	
     return dist > global.Law.sqPlayRadius;
 }
 function collision_check(obj_struct, dist, subj_r){
@@ -403,7 +432,7 @@ function gravity_function(m_1, m_2, d_squared){
 }
 
 function get_gravitational_force(obj_struct, subj_dist, subj_mass){
-	if(struct_exists(obj_struct,"v2x") &&struct_exists(obj_struct,"v2y")&&struct_exists(obj_struct,"r")&&struct_exists(obj_struct,"damage")){
+	if(struct_exists(obj_struct,"v2x") && struct_exists(obj_struct,"v2y")&&struct_exists(obj_struct,"r")&&struct_exists(obj_struct,"damage")){
 		
 		var grav = global.simRate * gravity_function(subj_mass,(obj_struct.mass), subj_dist);
 		return grav;
@@ -420,32 +449,34 @@ function get_gravitational_force_at_point(subj_x, subj_y, subj_mass = 1, _level 
 		_level = obj_game.level;
 	var starttime = current_time;
 	var ratio = 0;
-	var end_dist_x = (level.endpoint.v2x - subj_x);
-	var end_dist_y = (level.endpoint.v2y - subj_y);
+	var end_dist_x = (get_struct_x_position(_level.endpoint) - subj_x);
+	var end_dist_y = (get_struct_y_position(_level.endpoint) - subj_y);
 	var dist =(power(end_dist_x,2) + power(end_dist_y,2)); 
 	
 	ratio = get_gravitational_force(_level.endpoint,dist,subj_mass);	
 	
 	for(var i = 0; i < array_length(_level.components); i++){
-		end_dist_x = (_level.components[i].v2x - subj_x);
-		end_dist_y = (_level.components[i].v2y - subj_y);
+		end_dist_x = (get_struct_x_position(_level.components[i]) - subj_x);
+		end_dist_y = (get_struct_y_position(_level.components[i])- subj_y);
 		dist = power(end_dist_x,2) + power(end_dist_y,2); 
 		ratio += get_gravitational_force(_level.components[i], dist, subj_mass);
 	}
 	return ratio;
 }
-function get_total_gravitational_acceleration(subj_x, subj_y, subj_mass = 1){
+function get_total_gravitational_acceleration(subj_x, subj_y, subj_mass = 1, _level = noone){
+	if(_level == noone)
+		_level = obj_game.level;
 	var starttime = current_time;
-	var ratio = 0;
-	var end_dist_x = (obj_game.level.endpoint.v2x - subj_x);
-	var end_dist_y = (obj_game.level.endpoint.v2y - subj_y);
+	var ratio = 0; 
+	var end_dist_x = (get_struct_x_position(_level.endpoint) - subj_x);
+	var end_dist_y = (get_struct_y_position(_level.endpoint) - subj_y);
 	var dist =(power(end_dist_x,2) + power(end_dist_y,2)); 
 	var x_vel = 0;
 	var y_vel = 0;
 	var x_ratio = power(end_dist_x,2) /dist;
 	var y_ratio = power(end_dist_y,2)/dist;
 	
-	ratio = get_gravitational_force(obj_game.level.endpoint,dist,subj_mass);	
+	ratio = get_gravitational_force(_level.endpoint,dist,subj_mass);	
 	if(end_dist_x <0)
 		x_ratio *= -1;
 	if(end_dist_y < 0)
@@ -457,18 +488,18 @@ function get_total_gravitational_acceleration(subj_x, subj_y, subj_mass = 1){
 	x_vel += velModX
 	y_vel += velModY;
 	var neighbors = array_create(2);
-	for(var i = 0; i < array_length(obj_game.level.components); i++){
+	for(var i = 0; i < array_length(_level.components); i++){
 		for(var k = 0; k < array_length(neighbors); k++){
 			if(neighbors[k] == 0){
-				neighbors[k] = obj_game.level.components[i];
+				neighbors[k] = _level.components[i];
 				break;
 			}
-			if(get_square_distance(obj_game.level.components[i], subj_x, subj_y) < get_square_distance(neighbors[k],subj_x, subj_y)){
+			if(get_square_distance(_level.components[i], subj_x, subj_y) < get_square_distance(neighbors[k],subj_x, subj_y)){
 				if(k < array_length(neighbors)-1){
 					neighbors[k+1] = neighbors[k];	
 					
 				}
-				neighbors[k] = obj_game.level.components[i];
+				neighbors[k] = _level.components[i];
 				break;
 				
 			}
@@ -482,8 +513,8 @@ function get_total_gravitational_acceleration(subj_x, subj_y, subj_mass = 1){
 		if(neighbors[i] == 0)
 			break;
 			
-		 end_dist_x = (neighbors[i].v2x - subj_x);
-		 end_dist_y = (neighbors[i].v2y - subj_y);
+		 end_dist_x = (get_struct_x_position(neighbors[i]) - subj_x);
+		 end_dist_y = (get_struct_y_position(neighbors[i]) - subj_y);
 			dist = power(end_dist_x,2) + power(end_dist_y,2); 
 		
 			ratio = get_gravitational_force(neighbors[i], dist, subj_mass);

@@ -8,10 +8,11 @@ multiLifespan = 60;
 multi_x = 0;
 multi_y = 0;
 frame = 0;
+force = 0;
 startTime = current_time;
 teleport_target = noone;
 if(global.liveProjectiles < 150){
-	engineSound = audio_play_sound(Engine,global.liveProjectiles,true);
+	engineSound = audio_play_sound(Engine,global.liveProjectiles,true,0.2);
 	//if(global.liveProjectiles%2 == 0)
 	//multiplierSound = audio_play_sound(multiplier_1, global.liveProjectiles, true,  1, audio_sound_get_track_position(obj_game.endSound));
 	//else

@@ -3,5 +3,4 @@
 
 audio_stop_sound(engineSound);
 global.liveProjectiles--;
-
-obj_game.total_multiplier -= projectile.mult;
+obj_game.total_multiplier -= (projectile.mult-1);

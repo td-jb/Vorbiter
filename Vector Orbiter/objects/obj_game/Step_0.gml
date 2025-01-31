@@ -53,7 +53,7 @@ if(!global.intro && window_has_focus()){
 			return;	
 		}
 	}
-	if(room == game_room){
+	if(!instance_exists(obj_main_menu)){
 		if(!postGame)
 			process_user_inputs();
 	}
@@ -66,8 +66,8 @@ set_camera_view();
 if(global.Law.threeD && !global.Settings.fullGrid.value){
 	if(global.Graphics.gridCountX != global.Graphics.prev_grid_count_x 
 	|| global.Graphics.gridCountY != global.Graphics.prev_grid_count_y
-	|| global.Graphics.prev_grid_offset_x != global.Graphics.grid_x_offset 
-	|| global.Graphics.prev_grid_offset_y != global.Graphics.grid_y_offset 
+	|| global.Graphics.prev_grid_offset_x != global.Graphics.gridOffsetX 
+	|| global.Graphics.prev_grid_offset_y != global.Graphics.gridOffsetY 
 	|| global.Graphics.prev_grid_thickness != global.Settings.gridThickness.value)
 	{
 	    fill_grid_buffer();

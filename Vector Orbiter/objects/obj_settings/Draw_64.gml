@@ -16,6 +16,8 @@ if(global.debugMode != DebugMode.NONE){
 		case DebugMode.INPUT:
 			topLeftString += "\nglobal.Input Debug";
 			break;
+		case DebugMode.GAME:
+			topLeftString += "\nglobal.Game Debug";
 		
 	}
 	if(global.debugMode  == DebugMode.SCREEN){
@@ -39,9 +41,9 @@ if(global.debugMode != DebugMode.NONE){
 		topLeftString += "\ntarget Height: " + string(global.Graphics.currHeight * global.Graphics.screenScale);
 		topLeftString += "\nScreen Scale: " + string(global.Graphics.screenScale);
 		topLeftString += "\nGrid X Count: " + string(global.Graphics.gridCountX) + " Grid Y Count: " + string(global.Graphics.gridCountX) + " Sim Count: " + string(global.sim_grid_count);
-		topLeftString += "\nGrid X Offset: " + string(global.Graphics.grid_x_offset) + " Grid Y Offset: " + string(global.Graphics.grid_y_offset);
+		topLeftString += "\nGrid X Offset: " + string(global.Graphics.gridOffsetX) + " Grid Y Offset: " + string(global.Graphics.gridOffsetY);
 		topLeftString += "\nGrid Width: " + string(global.Graphics.gridWidth) + " Grid Height: " + string(global.Graphics.gridHeight);
-		topLeftString += "\nGrid Size: " + string(global.grid_size) + " Grid Calc Width: " + string(global.grid_size * global.Graphics.gridCountX);
+		topLeftString += "\nGrid Size: " + string(global.Graphics.gridSize) + " Grid Calc Width: " + string(global.Graphics.gridSize * global.Graphics.gridCountX);
 		topLeftString += "\nMin Projectile X: " + string(global.Graphics.minProjectileX) + " Max Projectile X: " + string(global.Graphics.maxProjectileX);
 		topLeftString += "\nMin Projectile Y: " + string(global.Graphics.minProjectileY) + " Max Projectile Y: " + string(global.Graphics.maxProjectileY);
 		topLeftString += "\nActive Grid Updates: " + string(array_length( obj_game.spiral_grid_updates) +array_length( obj_game.grid_updates));
@@ -52,8 +54,8 @@ if(global.debugMode != DebugMode.NONE){
 		if(!global.Law.inBrowser){
 			log_sum_performance_time();
 		}
-		if(fps < global.Law.physRate)
-			global.Law.physRate = fps;
+		//if(fps < global.Law.physRate)
+		//	global.Law.physRate = fps;
 		topLeftString += "\nFPS:           " + string(fps) + " Min: " + string(global.Law.physRate);
 		topLeftString += "\nShot Preview:  " + string(global.trajectoryTime) + " ms (" + string(global.trajectoryTime*100/global.sumTime) + "%) Max: " + string(global.maxTrajectoryTime);
 		topLeftString += "\nProjectiles:   " + string(global.projectileTime) + " ms (" + string(global.projectileTime*100/global.sumTime) + "%) Max: " + string(global.maxProjectileTime);
@@ -73,16 +75,12 @@ if(global.debugMode != DebugMode.NONE){
 		topLeftString += "\n Locked: " + string(window_mouse_get_locked());
 		
 	}
-		
+	if(global.debugMode == DebugMode.GAME){
+		topLeftString += json_stringify(global.Game,true);	
+	}
 	if(global.Law.inBrowser){
 		
 		topLeftString += "\nWebGl Enabled: " + string(webgl_enabled);	
 	}
 }
 draw_text(textMargin , textMargin, topLeftString);
-var bottom_right_x = display_get_gui_width() -textMargin;
-var bottom_right_y = display_get_gui_height()-textMargin;
-
-var timePercentage = (current_time%2000)/2000
-timePercentage = clamp(timePercentage, 0, 1);
-var prompt_width = sprite_get_width(spr_back) * sprite_scale;

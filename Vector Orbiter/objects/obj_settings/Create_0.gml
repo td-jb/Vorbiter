@@ -1,11 +1,12 @@
 /// @description Insert description here
 // You can write your code in this editor
-
+//game_set_speed( 244, gamespeed_fps);
 #region enums
 enum DebugMode {
 	SCREEN,
 	PERFORMANCE,
 	INPUT,
+	GAME,
 	NONE
 }
 enum MenuScreen{
@@ -56,15 +57,12 @@ global.objectDepth = false;
 global.spiralUpdate = false;
 global.currentLevel = 0;
 global.show_ui = true;
-global.boost = false;
-global.brake = false;
-global.grid_size = global.Settings.baseGridSize.value;
 global.sim_grid_size = global.Settings.baseGridSize.value;
 global.sim_grid_count = (global.Law.playRadius * 2)/global.sim_grid_size;
 global.backgroundColor = make_color_hsv(255,global.Settings.colorSaturation.value,global.Settings.colorValue.value);
-global.good_color = make_color_hsv(global.Settings.goodHue.value, global.Settings.colorSaturation.value, global.Settings.colorValue.value);
-global.projectile_color = make_color_hsv(global.Settings.projectileHue.value, global.Settings.colorSaturation.value, global.Settings.colorValue.value);
-global.bad_color = make_color_hsv(global.Settings.badHue.value, global.Settings.colorSaturation.value, global.Settings.colorValue.value);
+global.goodColor = make_color_hsv(global.Settings.goodHue.value, global.Settings.colorSaturation.value, global.Settings.colorValue.value);
+global.projectileColor = make_color_hsv(global.Settings.projectileHue.value, global.Settings.colorSaturation.value, global.Settings.colorValue.value);
+global.badColor = make_color_hsv(global.Settings.badHue.value, global.Settings.colorSaturation.value, global.Settings.colorValue.value);
 global.Graphics = create_blank_graphics_state();
 global.Game = create_blank_game_state();
 global.Input = create_blank_input_state();
@@ -97,13 +95,7 @@ global.vertCopyRate = false;
 global.frame_vert_count = 0;
 #endregion
 #region global.Input overlay variables
-left_click_sprite = spr_lmb;
-right_click_sprite = spr_rmb;
-escape_sprite = spr_esc;
 textMargin = 5;
-sprite_scale = 0.33;
-row_height = max(sprite_get_height(left_click_sprite),sprite_get_height(right_click_sprite),sprite_get_height(escape_sprite))*sprite_scale + textMargin
-row_width = row_height * 3;
 #endregion
 #region initialization
 						

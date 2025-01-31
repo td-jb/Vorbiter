@@ -9,7 +9,7 @@
   "bitRate":128,
   "compression":0,
   "conversionMode":0,
-  "duration":2.0114,
+  "duration":0.0,
   "name":"EndDrum",
   "parent":{
     "name":"ComponentSounds",

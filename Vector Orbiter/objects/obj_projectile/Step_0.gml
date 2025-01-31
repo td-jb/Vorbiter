@@ -1,10 +1,11 @@
 /// @description Insert description here
 // You can write your code in this editor
-if(projectile == noone || x == infinity || x == NaN || y == infinity || y == NaN)
-	return;
+//if(projectile == noone || x == infinity || x == NaN || y == infinity || y == NaN)
+//	return;
 if(multiTimer>=0){
 	multiTimer--;
 }
+force = 0;
 frame++;
 projectile.frameMult = 0;
 startTime = current_time;

@@ -52,11 +52,10 @@ function create_default_laws(){
 		pRadius: 10,
 		pMassFactor: 150,
 		inBrowser: os_browser != browser_not_a_browser,
-		threeD:  os_browser == browser_not_a_browser || webgl_enabled,
-		gridMass: 10000,
+		threeD: os_browser == browser_not_a_browser || webgl_enabled,
+		gridMass: 1,
 		depthMod: 1,
 		physRate: 60,
-		depthMod: 1,
 		gridVertexFormat: create_vertex_format(),
 		boostMod: 0.01,
 		brakeMod: 0.01,
@@ -66,7 +65,10 @@ function create_default_laws(){
 		multiplierRadiusMod: .45,
 		multiplierRate: 1,
 		hueMult: 2,
-		edgeFalloff: 1000
+		edgeFalloff: 1000,
+		momentum: true,
+		stableBoundary: true,
+		fieldCheck: false
 	}				
 }
 function create_default_settings_struct(){
@@ -83,7 +85,7 @@ function create_default_settings_struct(){
 						note: "Changes the thickness with which the grid is drawn", 
 						req:{struct:"fullGrid", value: false}},
 		gridAlpha: {value: 0.1, type: SettingType.REAL, limits:[0,1], name: "Grid Transparency", note: "The transparency used when drawing the grid." },
-		gridUpdateRate: {value: 500, type: SettingType.INT, limits:[1,36000], name: "Grid Update Rate", note: "How many grid nodes are updated per frame when recalculating gravity wells. Lower values will improve performance."},
+		gridUpdateRate: {value: 400, type: SettingType.INT, limits:[1,36000], name: "Grid Update Rate", note: "How many grid nodes are updated per frame when recalculating gravity wells. Lower values will improve performance."},
 		colorSaturation: {value: 255, type: SettingType.SATURATION, limits:[0,255], name: "Saturation", note: "The base Saturation level." },
 		colorValue:  {value: 255, type: SettingType.VALUE, limits:[0,255], name: "Brightness", note: "The base Brightness." },
 		backgroundHue: {value: 255, type: SettingType.HUE, limits:[0,255], name: "Background Hue", note: "The base hue used for background elements (the launcher ,the grid, exterior bounds)" },
@@ -113,14 +115,15 @@ function create_blank_game_state(){
 		levelScore: 0,
 		pulseFactor: 0,
 		cosPulse: 0,
-		editor_selected_object: -1
+		editor_selected_object: -1,
+		simShotCount: 0
 	};	
 	return new_state;
 }
 function create_blank_graphics_state(){
 	var new_state = {
-		gridCountX: view_wport[0]/global.grid_size,
-		gridCountY: view_hport[0]/global.grid_size,
+		gridCountX: view_wport[0]/global.Settings.baseGridSize.value,
+		gridCountY: view_hport[0]/global.Settings.baseGridSize.value,
 		prev_grid_count_y: 0,
 		prev_grid_count_x: 0,
 		prev_grid_thickness: global.Settings.gridThickness.value,
@@ -140,6 +143,7 @@ function create_blank_graphics_state(){
 		gridWidth: 0,
 		gridStartX: 0,
 		gridStartY: 0,
+		gridSize: global.Settings.baseGridSize.value,
 		minProjectileX: 0,
 		maxProjectileX: 0,
 		minProjectileY: 0,
@@ -156,7 +160,10 @@ function create_blank_graphics_state(){
 		stopTimer: 0,
 		screenScale: 1,
 		vertBuffer: vertex_create_buffer(),
-		updateBuffer: vertex_create_buffer()
+		updateBuffer: vertex_create_buffer(),
+		minProjectile: noone,
+		explosionCount: 0,
+		shotPreviews: array_create(global.Law.trajectoryLength, -1)
 	};	
 	return new_state;
 }
@@ -167,7 +174,13 @@ function create_blank_input_state(){
 		d_x: 0,
 		d_y: 0,
 		launch_x: 0,
-		launch_y: 0
+		launch_y: 0,
+		shooting: false,
+		cursorX: window_get_width()/2,
+		cursorY: window_get_height()/2,
+		controllerMode: false,
+		boost: false,
+		brake: false
 	};	
 	return new_state;
 }
@@ -407,6 +420,42 @@ function add_default_level(){
 	array_push(levelArray, level);
 	
 }
+function shift_level_elements(_d_x, _d_y, _permanent){
+	var target_variable_x = "v2x";
+	var target_variable_y = "v2y";
+	if(!_permanent){
+		target_variable_x = "d_x";
+		target_variable_y = "d_y";
+		global.Input.cursorX += _d_x;
+		global.Input.cursorY += _d_y;
+		//global.Input.launch_x += _d_x;
+		//global.Input.launch_y += _d_y;
+	}
+	modify_struct_variable(obj_game.level.start, target_variable_x, _d_x);
+	modify_struct_variable(obj_game.level.start, target_variable_y, _d_y);
+	if(boundary_collision_check(obj_game.level.start))
+		trigger_reset();
+	modify_struct_variable(obj_game.level.endpoint, target_variable_x, _d_x);
+	modify_struct_variable(obj_game.level.endpoint, target_variable_y, _d_y);
+	if(boundary_collision_check(obj_game.level.endpoint))
+		trigger_reset();
+	for(var i = 0; i <array_length(obj_game.level.components); i++){
+		modify_struct_variable(obj_game.level.components[i], target_variable_x, _d_x);
+		modify_struct_variable(obj_game.level.components[i], target_variable_y, _d_y);
+		if(boundary_collision_check(obj_game.level.components[i]))
+			trigger_reset();
+	}
+	trigger_grid_update();
+	update_trajectory_preview();
+}
+
+function modify_struct_variable(_struct, _var_name, _value){
+	var new_value = _value;
+	if(struct_exists(_struct, _var_name)){
+		new_value += struct_get(_struct, _var_name);
+	}
+	struct_set(_struct, _var_name,  new_value);	
+}
 function add_component_to_level(_v2x, _v2y, _r, type = "circle"){
 	var newComponent = noone;
 	switch type{
@@ -422,15 +471,16 @@ function add_component_to_level(_v2x, _v2y, _r, type = "circle"){
 				};
 			break;
 		case "square":{
-			newComponent = {name: type,
-			v2x: _v2x,
-			v2y: _v2y,
-			r: _r,
-			mass: 0,
-			damage: 0,
-			_id: array_length( obj_game.level.components)+2
+				newComponent = {name: type,
+				v2x: _v2x,
+				v2y: _v2y,
+				r: _r,
+				mass: 0,
+				damage: 0,
+				_id: array_length( obj_game.level.components)+2
 			};
 		}
+		break;
 	}
 	array_push( obj_game.level.components, newComponent);
 	return newComponent;
@@ -527,6 +577,16 @@ function shift_array(array){
 
 function generate_trig_tables(){
 	//2*pi/4
+	global.squares = array_create(global.Law.playRadius);
+	for(var i=1; i <= global.Law.playRadius * 2; i++){
+		global.squares[i-1] = power(i,2);
+	}	
+}
 
+function cursor_collision_check(x_1, y_1, x_2, y_2){
+	return (global.Input.cursorX > x_1 && global.Input.cursorX < x_2 && global.Input.cursorY > y_1 && global.Input.cursorY < y_2)
+	
+}
+function fuzzy_sqrt(_real){
 	
 }

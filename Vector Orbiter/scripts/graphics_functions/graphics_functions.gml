@@ -41,9 +41,9 @@ function fill_grid_buffer(full = false){
 		var grid_ratio = 1;
 			
 		if( !full){
-			d_array_start_x = round(global.Graphics.grid_x_offset + global.Law.playRadius)/global.sim_grid_size;
-			d_array_start_y = round(global.Graphics.grid_y_offset + global.Law.playRadius)/global.sim_grid_size;
-			grid_ratio = global.grid_size/global.sim_grid_size;
+			d_array_start_x = round(global.Graphics.gridOffsetX + global.Law.playRadius)/global.sim_grid_size;
+			d_array_start_y = round(global.Graphics.gridOffsetY + global.Law.playRadius)/global.sim_grid_size;
+			grid_ratio = global.Graphics.gridSize/global.sim_grid_size;
 			count_x = global.Graphics.gridCountX;
 			count_y = global.Graphics.gridCountY;
 			
@@ -57,7 +57,7 @@ function fill_grid_buffer(full = false){
 				var depth_x_2_index = d_array_start_x + (i-1)*grid_ratio;
 				var depth_y_1_index = d_array_start_y + (k)*grid_ratio;
 				set_grid_point_vertices(depth_x_1_index, depth_y_1_index, grid_ratio, true);
-			}//draw_line_width(i * global.grid_size + global.Graphics.grid_x_offset, global.Graphics.gridStartY, i * global.grid_size + global.Graphics.grid_x_offset, grid_height, (global.grid_size*5)/global.Settings.baseGridSize.value );	
+			}//draw_line_width(i * global.Graphics.gridSize + global.Graphics.gridOffsetX, global.Graphics.gridStartY, i * global.Graphics.gridSize + global.Graphics.gridOffsetX, grid_height, (global.Graphics.gridSize*5)/global.Settings.baseGridSize.value );	
 	
 		}
 
@@ -322,95 +322,57 @@ function add_vert_to_buffer(_buffer, _x, _y, _z, alph, col, tex_1 = 0.5, tex_2 =
 }
 #endregion
 #region camera/viewspace functions
+function reset_view_min_max(){
+	global.Graphics.prevMaxX = global.Graphics.maxProjectileX;
+	global.Graphics.prevMaxY = global.Graphics.maxProjectileY;
+	global.Graphics.prevMinX = global.Graphics.minProjectileX;
+	global.Graphics.prevMinY = global.Graphics.minProjectileY;
+	global.Graphics.minProjectileX = infinity;
+	global.Graphics.maxProjectileX = -infinity;
+	global.Graphics.minProjectileY = infinity;
+	global.Graphics.maxProjectileY = -infinity;
+}
+function modify_min_max_from_struct(obj_struct, _check_offset = 100, _set_offset = 100, _r_mult = 2){
+	var _r = get_actual_radius(obj_struct)*_r_mult;
+	if(get_struct_x_position(obj_struct) - _r - _check_offset  < global.Graphics.minProjectileX)
+		global.Graphics.minProjectileX = get_struct_x_position(obj_struct) - _r - _set_offset;
+	if(get_struct_y_position(obj_struct) - _r- _check_offset <global.Graphics.minProjectileY)
+		global.Graphics.minProjectileY = get_struct_y_position(obj_struct) - _r- _set_offset;
+	if(get_struct_x_position(obj_struct) + _r+  _check_offset  > global.Graphics.maxProjectileX)
+		global.Graphics.maxProjectileX = get_struct_x_position(obj_struct) + _r+ _set_offset;
+	if(get_struct_y_position(obj_struct) + _r+ _check_offset  > global.Graphics.maxProjectileY)
+		global.Graphics.maxProjectileY = get_struct_y_position(obj_struct) + _r+ _set_offset;
+}
 function set_camera_view(){
 	/// function sketch
 	// determine component minima and maxima
 	// record last frame min/max
 	// project next minima/maxima
-	// 
-	global.Graphics.prevMaxX = global.Graphics.maxProjectileX;
-	global.Graphics.prevMaxY = global.Graphics.maxProjectileY;
-	global.Graphics.prevMinX = global.Graphics.minProjectileX;
-	global.Graphics.prevMinY = global.Graphics.minProjectileY;
-	global.Graphics.minProjectileX = 99999;
-	global.Graphics.maxProjectileX = -99999;
-	global.Graphics.minProjectileY = 99999;
-	global.Graphics.maxProjectileY = -99999;
-	if(get_struct_x_position(obj_game.level.start) - level.start.r*2- 100  < global.Graphics.minProjectileX)
-		global.Graphics.minProjectileX = get_struct_x_position(obj_game.level.start) - level.start.r*2- 100 ;
+	reset_view_min_max();
+	modify_min_max_from_struct(obj_game.level.start)
 		
-	if( get_struct_y_position(obj_game.level.start) - level.start.r*2- 100 <global.Graphics.minProjectileY)
-		global.Graphics.minProjectileY = get_struct_y_position(obj_game.level.start) - level.start.r*2- 100 ;
-	if(get_struct_x_position(obj_game.level.start) - level.start.r*2+  100  > global.Graphics.maxProjectileX)
-		global.Graphics.maxProjectileX = get_struct_x_position(obj_game.level.start) + level.start.r*2+ 100 ;
-	if( get_struct_y_position(obj_game.level.start) + level.start.r*2- 100  > global.Graphics.maxProjectileY)
-		global.Graphics.maxProjectileY = get_struct_y_position(obj_game.level.start) + level.start.r*2+ 100 ;
-	
-		
-	if(level.endpoint.v2x - level.endpoint.r < global.Graphics.minProjectileX){
-		global.Graphics.minProjectileX = level.endpoint.v2x - level.endpoint.r * 2 - 100 ;
-	}
-	if(level.endpoint.v2y - level.endpoint.r < global.Graphics.minProjectileY){
-		global.Graphics.minProjectileY = level.endpoint.v2y - level.endpoint.r* 2 - 100 ;
-	}
-	if(level.endpoint.v2x + level.endpoint.r > global.Graphics.maxProjectileX){
-		global.Graphics.maxProjectileX = level.endpoint.v2x + level.endpoint.r * 2+ 100 ;
-	}
-	
-	if(level.endpoint.v2y + level.endpoint.r > global.Graphics.maxProjectileY){
-		global.Graphics.maxProjectileY = level.endpoint.v2y + level.endpoint.r * 2+ 100 ;
-	}
-	
+	modify_min_max_from_struct(obj_game.level.endpoint)
 	var componentCount = array_length(level.components);
 	for (var i = 0; i < componentCount; i++){
-				
-		if(level.components[i].v2x - (level.components[i].r + level.components[i].damage)*2- 200  < global.Graphics.minProjectileX){
-			global.Graphics.minProjectileX = level.components[i].v2x - (level.components[i].r + level.components[i].damage) * 2- 200 ;
-		}
-		if(level.components[i].v2y - (level.components[i].r + level.components[i].damage)*2 - 100 < global.Graphics.minProjectileY){
-			global.Graphics.minProjectileY = level.components[i].v2y - (level.components[i].r + level.components[i].damage) *2 - 200 ;
-		}
-		if(level.components[i].v2x + (level.components[i].r + level.components[i].damage)*2 + 100 > global.Graphics.maxProjectileX){
-			global.Graphics.maxProjectileX = level.components[i].v2x + (level.components[i].r + level.components[i].damage) * 2+ 200 ;
-		}
-	
-		if(level.components[i].v2y + (level.components[i].r + level.components[i].damage) * 2+ 100  > global.Graphics.maxProjectileY){
-			global.Graphics.maxProjectileY = level.components[i].v2y + (level.components[i].r + level.components[i].damage) * 2+ 200 ;
-		}
-	
+		modify_min_max_from_struct(level.components[i], 100, 200);
 	}
 	
 	with(obj_projectile){
-		if(projectile.v2x- projectile.r*4 < global.Graphics.minProjectileX)
-			global.Graphics.minProjectileX = (projectile.v2x - projectile.r*4 );
-		if(projectile.v2y - projectile.r*4 < global.Graphics.minProjectileY)
-			global.Graphics.minProjectileY = (projectile.v2y -projectile.r*4 );		
-		if(projectile.v2x + projectile.r*4 >global.Graphics.maxProjectileX)
-			global.Graphics.maxProjectileX = (projectile.v2x +projectile.r*4 );
-		if(projectile.v2y+ projectile.r*4  >global.Graphics.maxProjectileY )
-			global.Graphics.maxProjectileY = (projectile.v2y + projectile.r*4 );
+		//if(projectile.v2x- projectile.r*4 < global.Graphics.minProjectileX)
+		//	global.Graphics.minProjectileX = (projectile.v2x - projectile.r*4 );
+		//if(projectile.v2y - projectile.r*4 < global.Graphics.minProjectileY)
+		//	global.Graphics.minProjectileY = (projectile.v2y -projectile.r*4 );		
+		//if(projectile.v2x + projectile.r*4 >global.Graphics.maxProjectileX)
+		//	global.Graphics.maxProjectileX = (projectile.v2x +projectile.r*4 );
+		//if(projectile.v2y+ projectile.r*4  >global.Graphics.maxProjectileY )
+		//	global.Graphics.maxProjectileY = (projectile.v2y + projectile.r*4 );
+		modify_min_max_from_struct(projectile,0,0,4);
 	}
-	if(room == game_room){
-		
-		if(obj_game.cursor_x - 20*global.Graphics.screenScale  < global.Graphics.minProjectileX){
-			global.Graphics.minProjectileX = obj_game.cursor_x- 20*global.Graphics.screenScale ;
-		
-		}
-		if(obj_game.cursor_y- 20*global.Graphics.screenScale  < global.Graphics.minProjectileY){
-			global.Graphics.minProjectileY = obj_game.cursor_y - 20*global.Graphics.screenScale ;
-		
-		}	
-		if(obj_game.cursor_x +20*global.Graphics.screenScale> global.Graphics.maxProjectileX){
-			global.Graphics.maxProjectileX = obj_game.cursor_x + 20*global.Graphics.screenScale ;
-		
-		}
-		if(obj_game.cursor_y +20*global.Graphics.screenScale> global.Graphics.maxProjectileY){
-			global.Graphics.maxProjectileY = obj_game.cursor_y+20*global.Graphics.screenScale;
-		
-		}
+	if(!instance_exists(obj_main_menu)){
+		modify_min_max_from_struct(global.Input, 20*global.Graphics.screenScale, 20*global.Graphics.screenScale)
 	}
 	var lerpFactor = 0.16;
-	if(room != game_room)
+	if(instance_exists(obj_main_menu))
 		lerpFactor = 0.0001;
 	var projectile_x_spread = lerp((global.Graphics.prevMaxX - global.Graphics.prevMinX) ,(global.Graphics.maxProjectileX - global.Graphics.minProjectileX ),lerpFactor);
 	var projectile_y_spread =  lerp((global.Graphics.prevMaxY - global.Graphics.prevMinY) ,(global.Graphics.maxProjectileY - global.Graphics.minProjectileY ),lerpFactor);
@@ -464,18 +426,20 @@ function set_camera_view(){
 		camera_set_view_size(view_camera[0], global.Graphics.currWidth, global.Graphics.currHeight);
 	}
 	if(global.Graphics.stopTimer<= 0){
-		global.grid_size = max(global.Settings.baseGridSize.value, global.Settings.baseGridSize.value* power(2,min(max(0,ceil(global.Graphics.screenScale /global.Settings.gridScaleFactor.value)-1),3)));
+		set_grid_variables();
+	}
+}
+function set_grid_variables(){
+		global.Graphics.gridSize = max(global.Settings.baseGridSize.value, global.Settings.baseGridSize.value* power(2,min(max(0,ceil(global.Graphics.screenScale /global.Settings.gridScaleFactor.value)-1),3)));
 		var grid_buffer = 5;
-		global.Graphics.gridCountX = ceil(global.Graphics.currWidth/global.grid_size) + grid_buffer * 2;
-		var base_y_count = ceil(global.Graphics.currHeight/global.grid_size)
-		global.Graphics.gridCountY = ceil(global.Graphics.currHeight/global.grid_size)+ grid_buffer * 2;
+		global.Graphics.gridCountX = ceil(global.Graphics.currWidth/global.Graphics.gridSize) + grid_buffer * 2;
+		global.Graphics.gridCountY = ceil(global.Graphics.currHeight/global.Graphics.gridSize)+ grid_buffer * 2;
 		global.Graphics.gridWidth =global.Graphics.currWidth*1.5;
 		global.Graphics.gridHeight =global.Graphics.currHeight*1.5;
 		global.Graphics.gridStartX = global.Graphics.currX;
 		global.Graphics.gridStartY = global.Graphics.currY;
-		global.Graphics.grid_x_offset = global.Graphics.gridStartX - (global.Graphics.currX % global.grid_size)-grid_buffer*global.grid_size;
-		global.Graphics.grid_y_offset = global.Graphics.gridStartY - (global.Graphics.currY% global.grid_size) -grid_buffer*global.grid_size;
-	}
+		global.Graphics.gridOffsetX = global.Graphics.gridStartX - (global.Graphics.currX % global.Graphics.gridSize)-grid_buffer*global.Graphics.gridSize;
+		global.Graphics.gridOffsetY = global.Graphics.gridStartY - (global.Graphics.currY% global.Graphics.gridSize) -grid_buffer*global.Graphics.gridSize;
 }
 function get_view_space_center_x(){
 	return global.Graphics.currX + global.Graphics.currWidth/2;	
@@ -500,20 +464,20 @@ function draw_grid(){
 				var z_y_1 =0
 				var z_y_2 = 0
 				var z_y_3 = 0
-				var x_1 = i * global.grid_size + global.Graphics.grid_x_offset  ;
-				var y_1 = k * global.grid_size + global.Graphics.grid_y_offset  ;
-				var x_2 = (i+1) * global.grid_size + global.Graphics.grid_x_offset ;
-				var y_2 = (k+1) * global.grid_size + global.Graphics.grid_y_offset ;
+				var x_1 = i * global.Graphics.gridSize + global.Graphics.gridOffsetX  ;
+				var y_1 = k * global.Graphics.gridSize + global.Graphics.gridOffsetY  ;
+				var x_2 = (i+1) * global.Graphics.gridSize + global.Graphics.gridOffsetX ;
+				var y_2 = (k+1) * global.Graphics.gridSize + global.Graphics.gridOffsetY ;
 				if(global.debugMode< DebugMode.NONE){
 					draw_set_alpha(1);
 					draw_text(x_1 + z_x_1+10, y_1+z_y_1 ,"X: " + string(round(x_1 + z_x_1)) + "\nY: " + string(round(y_1+ z_y_1)));	
 				}
 			
 				var depthFactor = 1;
-				draw_line_width(x_1 + z_x_1,y_1 + z_y_1, x_1+z_x_3, y_2 + z_y_3, (global.grid_size*3*depthFactor)/global.Settings.baseGridSize.value )
-				//depthFactor =(1-abs((z_x_1 + z_x_2 + z_y_1 + z_y_2)/4)/(global.grid_size/2))
+				draw_line_width(x_1 + z_x_1,y_1 + z_y_1, x_1+z_x_3, y_2 + z_y_3, (global.Graphics.gridSize*3*depthFactor)/global.Settings.baseGridSize.value )
+				//depthFactor =(1-abs((z_x_1 + z_x_2 + z_y_1 + z_y_2)/4)/(global.Graphics.gridSize/2))
 				depthFactor =1 ;
-				draw_line_width(x_1+ z_x_1,y_1+ z_y_1, x_2+ z_x_2, y_1+ z_y_2, (global.grid_size*3*depthFactor)/global.Settings.baseGridSize.value )
+				draw_line_width(x_1+ z_x_1,y_1+ z_y_1, x_2+ z_x_2, y_1+ z_y_2, (global.Graphics.gridSize*3*depthFactor)/global.Settings.baseGridSize.value )
 			}
 		}
 	}
@@ -572,12 +536,29 @@ function draw_game(_main, _x, _y, _scale, _level = noone){
 	
 }
 function draw_debug(){
+	//var _array_start_x = round(global.Graphics.gridOffsetX + global.Law.playRadius)/global.sim_grid_size;
+	//var _array_start_y = round(global.Graphics.gridOffsetY + global.Law.playRadius)/global.sim_grid_size;
 	if(global.spiralUpdate &&  global.debugMode < DebugMode.NONE){
 		draw_set_alpha(1);
 		draw_set_color(c_lime);
 		draw_circle(debug_x, debug_y, global.Settings.baseGridSize.value/2, false);	
 	
 	}
+	//if(global.debugMode == DebugMode.SCREEN){
+	//	for(var i = 0; i< global.sim_grid_count; i++){
+	//		var x_index = i;
+	//		for (var k= 0; k< global.sim_grid_count;k++){
+	//			var y_index =  k;
+	//			var _x = global.depth_array[x_index][y_index][0]
+	//			var _y = global.depth_array[x_index][y_index][1]
+	//			draw_text(_x,_y, string(global.depth_array[x_index][y_index][2]) +"\n" + string(get_gravitational_force_at_point(_x,_y, global.Law.gridMass)))
+				
+					
+	//		}
+			
+	//	}
+		
+	//}
 }
 function draw_background(){
 	
@@ -594,23 +575,40 @@ function draw_background(){
 }
 function draw_preview_trajectory(){
  
-	draw_set_color(global.projectile_color);
-
+	draw_set_color(global.projectileColor);
+	gpu_set_depth(global.Law.baseDepth)
 	if(!global.editMode){	
-		for(var i = 0; i<array_length(shot_preview_x)-2; i++){
-			var alpha =(power(shot_preview_x[i+2],2) + power(shot_preview_y[i+2],2))/global.Law.sqPlayRadius;
+		for(var i = 0; i<global.Law.trajectoryLength-2; i++){
+			if( obj_game.shot_preview_mult[i] == -1 ||  obj_game.shot_preview_mult[i+2]== -1)
+				continue;
+			//var _x_1 = global.Graphics.shotPreviews[i].v2x;
+			//var _y_1 = global.Graphics.shotPreviews[i].v2y;
+			//var _r_1 = global.Graphics.shotPreviews[i].r;
+			//var _m_1 = global.Graphics.shotPreviews[i].mult;
+			
+			//var _x_2 = global.Graphics.shotPreviews[i+2].v2x;
+			//var _y_2 = global.Graphics.shotPreviews[i+2].v2y;
+			var _x_1 = obj_game.shot_preview_x[i];
+			var _y_1 = obj_game.shot_preview_y[i];
+			var _r_1 = obj_game.shot_preview_r[i];
+			var _m_1 = obj_game.shot_preview_mult[i];
+			
+			var _x_2 = obj_game.shot_preview_x[i+2];
+			var _y_2 = obj_game.shot_preview_y[i+2];
+			
+			var alpha =(power(_x_2,2) + power(_y_2,2))/global.Law.sqPlayRadius;
 			var edgDist = alpha * global.Law.edgeFalloff;
 			if(alpha >= 1)
 				return;
 			if(global.objectDepth){
-				gpu_set_depth((get_gravity_depth_at_coordinate(shot_preview_x[i+2],shot_preview_y[i+2]))/global.Law.depthMod - 10);
+				gpu_set_depth((get_gravity_depth_at_coordinate(_x_2,_y_2))/global.Law.depthMod - 10);
 			}else if(global.Law.roundEdge){
 				gpu_set_depth(edgDist );
 			}
-			var hue  = (color_get_hue( global.projectile_color) +  ((1-shot_preview_mult[i])*global.Law.hueMult))%256;
+			var hue  = (color_get_hue( global.projectileColor) +  ((1-_m_1)*global.Law.hueMult))%256;
 			draw_set_color(make_color_hsv( hue, global.Settings.colorSaturation.value, global.Settings.colorValue.value))
-			draw_set_alpha(0.1 * (1-i/array_length(shot_preview_x)));
-			draw_line_width(shot_preview_x[i],shot_preview_y[i],shot_preview_x[i+2],shot_preview_y[i+2], shot_preview_r[i]*2);
+			draw_set_alpha(0.1 * (1-i/global.Law.trajectoryLength));
+			draw_line_width(_x_1,_y_1,_x_2,_y_2, _r_1*2);
 		}
 	}
 	draw_set_alpha(1);	
@@ -634,7 +632,7 @@ function draw_components(_x, _y, _scale, _level){
 				var hue = lerp(global.Settings.neutralHue.value,global.Settings.dangerHue.value, combinedRadiiSq/endDistSq);
 				draw_set_color(make_color_hsv(hue,global.Settings.colorSaturation.value,global.Settings.colorValue.value));
 				if(global.objectDepth){
-					gpu_set_depth((get_gravity_depth_at_coordinate(_level.components[i].v2x,  _level.components[i].v2y, (_level.components[i].dr))))
+					gpu_set_depth((get_gravity_depth_at_coordinate(get_struct_x_position( _level.components[i]), get_struct_y_position( _level.components[i]), (_level.components[i].dr))))
 				}else{
 					
 					gpu_set_depth(global.Law.baseDepth)
@@ -642,8 +640,8 @@ function draw_components(_x, _y, _scale, _level){
 				}
 				var radius =  (_level.components[i].dr);
 				draw_set_alpha(0.1)
-				var true_x = _x + _level.components[i].v2x* _scale;
-				var true_y = _y+ _level.components[i].v2y * _scale;
+				var true_x = _x + get_struct_x_position( _level.components[i])* _scale;
+				var true_y = _y+ get_struct_y_position( _level.components[i]) * _scale;
 				draw_circle(true_x,true_y, radius * (1+global.Law.multiplierRadiusMod)* _scale , false);
 			
 				draw_set_alpha(1)
@@ -662,8 +660,8 @@ function draw_components(_x, _y, _scale, _level){
 				}
 				var width =  (_level.components[i].r)*_scale;
 				//draw_set_alpha(0.1)
-				var true_x = _x + _level.components[i].v2x* _scale;
-				var true_y = _y+ _level.components[i].v2y * _scale;
+				var true_x = _x + get_struct_x_position(_level.components[i]) * _scale;
+				var true_y = _y+ get_struct_y_position(_level.components[i]) * _scale;
 				//draw_rectangle(true_x- (width),true_y- (width), true_x + width, true_y + width , false);
 				draw_set_alpha(1)
 				draw_rectangle(true_x- (width),true_y- (width), true_x + width, true_y + width , false);
@@ -679,27 +677,27 @@ function draw_components(_x, _y, _scale, _level){
 function draw_shoot_cursor(){
 	draw_set_color(global.backgroundColor);
 	if(!global.editMode){
-		if(shooting&& global.show_ui){
+		if(global.Input.shooting && global.show_ui){
 			draw_set_alpha(.4);
-			draw_line_width(get_struct_x_position(level.start),get_struct_y_position(level.start),cursor_x, cursor_y,10* global.Graphics.screenScale)
+			draw_line_width(get_struct_x_position(level.start),get_struct_y_position(level.start),global.Input.cursorX, global.Input.cursorY,10* global.Graphics.screenScale)
 			draw_set_alpha(1);
-			draw_circle(cursor_x, cursor_y, 5 * global.Graphics.screenScale,!shooting);	
+			draw_circle(global.Input.cursorX, global.Input.cursorY, 5 * global.Graphics.screenScale,!global.Input.shooting);	
 		}
 	}
 }
 function draw_aim_cursor(){
 	
-		draw_set_alpha(1);
-	if(!shooting && global.show_ui){
+	draw_set_alpha(1);
+	if(!global.Input.shooting&& global.show_ui){
 		draw_set_color(c_black)
-		draw_circle(cursor_x, cursor_y, 5 * global.Graphics.screenScale-1,false);
-		draw_set_color(make_color_hsv(color_get_hue(global.projectile_color),global.Settings.colorSaturation.value,global.Settings.colorValue.value/2));
-		draw_circle(cursor_x, cursor_y, 5 * global.Graphics.screenScale,!shooting);	
+		draw_circle(global.Input.cursorX, global.Input.cursorY, 5 * global.Graphics.screenScale-1,false);
+		draw_set_color(make_color_hsv(color_get_hue(global.projectileColor),global.Settings.colorSaturation.value,global.Settings.colorValue.value/2));
+		draw_circle(global.Input.cursorX, global.Input.cursorY, 5 * global.Graphics.screenScale,!global.Input.shooting);	
 		if(global.debugMode< DebugMode.NONE){
-			draw_text(cursor_x, cursor_y + 10,"X: " + string(cursor_x) + "\nY: " + string(cursor_y));	
+			draw_text(global.Input.cursorX, global.Input.cursorY + 10,"X: " + string(global.Input.cursorX) + "\nY: " + string(global.Input.cursorY));	
 		}
-		if(room == game_room && last_shot_position[0] != infinity){
-			draw_set_color(global.good_color);
+		if(!instance_exists(obj_main_menu) && last_shot_position[0] != infinity){
+			draw_set_color(global.goodColor);
 			draw_set_alpha(0.5)
 			draw_circle(last_shot_position[0], last_shot_position[1], 5 * global.Graphics.screenScale-1,true);
 			draw_text(last_shot_position[0] + 5, last_shot_position[1] + 5 , "last shot");
@@ -708,9 +706,9 @@ function draw_aim_cursor(){
 	if(global.debugMode< DebugMode.NONE){
 		draw_set_alpha(1);
 		draw_set_color(c_white);
-		draw_text(level.endpoint.v2x,level.endpoint.v2y ,"X: " + string(level.endpoint.v2x) + "\nY: " + string(level.endpoint.v2y));	
+		draw_text(get_struct_x_position(level.endpoint),get_struct_y_position(level.endpoint) ,"X: " + string(get_struct_x_position(level.endpoint)) + "\nY: " + string(get_struct_y_position(level.endpoint)));	
 	}
-			draw_set_alpha(1)
+	draw_set_alpha(1)
 }
 function draw_projectiles(){
 	with(obj_projectile){
@@ -723,7 +721,7 @@ function draw_projectiles(){
 		
 			gpu_set_depth(edgDist);
 		}
-		if(room != game_room){
+		if(instance_exists(obj_main_menu)){
 			var title = "RETIBROV";
 			var title_length = string_length(title);	
 			var scale = projectile.r/5;
@@ -742,8 +740,8 @@ function draw_projectiles(){
 				draw_set_alpha ((1 )-i/array_length(x_trail));
 			var dist_sq = power(x-start_x,2) + power(y-start_y,2);
 			draw_set_circle_precision(4);
-			if(room == game_room){
-				draw_set_alpha (((1 + global.boost*0.5 )-i/array_length(x_trail))*.25);
+			if(!instance_exists(obj_main_menu)){
+				draw_set_alpha (((1 + global.Input.boost*0.5 )-i/array_length(x_trail))*.25);
 				draw_circle(start_x,start_y, ((projectile.r) + global.Game.pulseFactor)/((i)/array_length(x_trail)+1), true);
 			}else{
 				//draw_set_alpha ((1-i/array_length(x_trail))/2);
@@ -758,7 +756,7 @@ function draw_projectiles(){
 		var opa = min(0.6,(projectile.r/obj_game.level.endpoint.r)) + 0.2;
 		opa *= alpha;
 		var real_color = make_color_hsv(hue,  global.Settings.colorSaturation.value, global.Settings.colorValue.value* opa);
-		if(room == game_room){
+		if(!instance_exists(obj_main_menu)){
 			if(opa<1){
 				draw_set_alpha(max(0.2,alpha));
 				draw_circle(x, y, projectile.r + global.Game.pulseFactor + 1, true);	
@@ -766,12 +764,12 @@ function draw_projectiles(){
 			
 			draw_set_alpha(alpha*.4);
 			
-			if(global.boost&& projectile.r > global.Law.pRadius){
+			if(global.Input.boost && projectile.r > global.Law.pRadius){
 				
 				draw_set_color(make_color_hsv(global.Settings.neutralHue.value,255,255 ));
 				draw_line_width(x,y, x-projectile.x_vel/2, y-projectile.y_vel/2, projectile.r*2);
 					
-			}if(global.brake&& projectile.r > global.Law.pRadius){
+			}if(global.Input.brake && projectile.r > global.Law.pRadius){
 				
 				draw_set_color(make_color_hsv(global.Settings.dangerHue.value,255,255 ));
 				draw_line_width(x,y, x+projectile.x_vel/2, y+projectile.y_vel/2, projectile.r*2);
@@ -804,15 +802,21 @@ function draw_projectiles(){
 			0,pointcolor,pointcolor,pointcolor,pointcolor, 
 			1);
 		}
+		if(global.debugMode == DebugMode.SCREEN){
+			draw_set_alpha(1)
+			draw_set_color(c_white);
+			draw_text(x, y- 12, string(force));
+			
+		}
 	}
 }
 function draw_explosions(){
 	draw_set_alpha(1);
-	explosion_count = 0;
+	global.Graphics.explosionCount = 0;
 	with(obj_explosion){
 		var alpha = 1/timePercentage;
 	
-		obj_game.explosion_count+= .05*radius;
+		global.Graphics.explosionCount+= .05*radius;
 		for(var i = 0; i < lineCount; i++){
 			var x_vector = sin( random_range(0,2*pi))*10*radius * global.Graphics.screenScale;
 			var y_vector = cos(random_range(0,2*pi))* 10*radius* global.Graphics.screenScale;
@@ -832,9 +836,9 @@ function draw_explosions(){
 		if(points != 0)	{
 			var point_text = num_separator(points, ",");
 			var width = string_width(point_text);
-			var pointcolor = global.bad_color;
+			var pointcolor = global.badColor;
 			if(points>0)
-				pointcolor = global.good_color;
+				pointcolor = global.goodColor;
 			if(global.Law.roundEdge){
 				alpha = clamp(((power(x-width/2 + text_x_vector * timePercentage,2) + power(y+text_y_vector*timePercentage,2) ) /global.Law.sqPlayRadius),0,1);
 				var edgDist = alpha * global.Law.edgeFalloff;
@@ -849,7 +853,7 @@ function draw_explosions(){
 			min(1,(timePercentage) * 2));
 		}
 	}
-	shake_fx_params.g_Magnitude = explosion_count;
+	shake_fx_params.g_Magnitude = global.Graphics.explosionCount;
 	fx_set_parameters(shake_layer,shake_fx_params);
 }
 function draw_start_point(_x, _y, _scale, _level){
@@ -874,9 +878,9 @@ function draw_end_point(_x, _y, _scale, _level){
 	draw_set_circle_precision(16/global.Law.circlePrecision)
 	set_gpu_depth_from_struct(level.endpoint);
 	draw_set_circle_precision(32/global.Law.circlePrecision)
-	draw_set_color(global.projectile_color);
+	draw_set_color(global.projectileColor);
 	if(global.Game.reset)
-		draw_set_color(global.bad_color);
+		draw_set_color(global.badColor);
 	if(global.objectDepth){
 		gpu_set_zwriteenable(true)
 		gpu_set_ztestenable(true);
@@ -900,9 +904,9 @@ function draw_end_point(_x, _y, _scale, _level){
 				(obj_game.level.endpoint.tr + global.Game.cosPulse)/global.Law.playRadius,
 				global.levels.array[(global.currentLevel + 1)%array_length(global.levels.array)]);
 		if(!global.Game.levelComplete && !global.Game.reset){
-			draw_set_color(global.good_color);
+			draw_set_color(global.goodColor);
 			draw_circle(true_x, true_y ,_level.endpoint.tr * _scale,true);
-			draw_set_color(global.projectile_color);
+			draw_set_color(global.projectileColor);
 			var gravRings = ((current_time-global.Game.roomStart)/2000* global.simRate) %1;
 			draw_set_alpha(gravRings *.5 + .25);
 			draw_circle(true_x, true_y ,_level.endpoint.tr* _scale - gravRings*_level.endpoint.tr * _scale,true);
@@ -924,15 +928,15 @@ function set_gpu_depth_from_point(x_coord, y_coord, radius = 1){
 	
 }
 function set_gpu_depth_from_struct(obj_struct){
-	set_gpu_depth_from_point(obj_struct.v2x, obj_struct.v2y, (obj_struct.dr)/2);
+	set_gpu_depth_from_point(get_struct_x_position(obj_struct), get_struct_y_position(obj_struct), get_actual_radius(obj_struct)/2);
 }
 function reset_colors(){
 	
 	
 	global.backgroundColor = make_color_hsv(255,global.Settings.colorSaturation.value,global.Settings.colorValue.value);
-	global.good_color = make_color_hsv(color_get_hue(c_lime), global.Settings.colorSaturation.value, global.Settings.colorValue.value);
-	global.projectile_color = make_color_hsv(color_get_hue(c_aqua), global.Settings.colorSaturation.value, global.Settings.colorValue.value);
-	global.bad_color = make_color_hsv(color_get_hue(c_red), global.Settings.colorSaturation.value, global.Settings.colorValue.value);
+	global.goodColor = make_color_hsv(global.Settings.goodHue.value, global.Settings.colorSaturation.value, global.Settings.colorValue.value);
+	global.projectileColor = make_color_hsv(global.Settings.projectileHue.value, global.Settings.colorSaturation.value, global.Settings.colorValue.value);
+	global.badColor = make_color_hsv(global.Settings.badHue.value, global.Settings.colorSaturation.value, global.Settings.colorValue.value);
 	trigger_grid_update();
 }
 function get_vert_alpha(x_index, y_index){
