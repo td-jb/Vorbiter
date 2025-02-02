@@ -143,6 +143,7 @@ function end_postgame(){
 		global.score = 0;
 		global.projectileCount = 0;
 		global.liveProjectiles = 0;	
+		add_high_score(global.currentLevel +1, global.score);
 		add_high_score(array_length(global.levels.array) -1, global.Game.levelScore);
 	}else{
 		add_high_score(global.currentLevel -1, global.Game.levelScore);
@@ -167,8 +168,7 @@ function change_level(inc = 1){
 	
 	if(global.currentLevel + inc >= array_length(global.levels.array) || global.currentLevel + inc < 0){
 		
-		add_high_score(global.currentLevel +1, global.score);
-		add_high_score(global.currentLevel, global.Game.levelScore);
+		//add_high_score(global.currentLevel, global.Game.levelScore);
 		reset_struct(level.endpoint)
 		global.currentLevel = 0;
 		audio_stop_sound(endSound);
@@ -377,16 +377,35 @@ function set_cursor_delta(){
 	if(!window_has_focus()){
 		window_set_cursor(cr_default);
 	}
+	//var horizontal = input_
+	//global.Input.controllerMode = input_cursor_dx()
 	//else if (room == game_room){
 	//	window_set_cursor(cr_none);	
 	//}
-	global.Input.d_x = (window_mouse_get_x()- window_get_width()/2)* global.Graphics.screenScale;
-	global.Input.d_y = (window_mouse_get_y() - window_get_height()/2)* global.Graphics.screenScale;
+	
+	if(global.Input.controllerMode){
+		global.Input.d_x = (input_cursor_dx()*2) * global.Graphics.screenScale;
+		global.Input.d_y = ((input_cursor_dy()*2)* global.Graphics.screenScale)
+	}else{
+		global.Input.d_x = window_mouse_get_delta_x() * global.Graphics.screenScale;
+		global.Input.d_y = window_mouse_get_delta_y() * global.Graphics.screenScale;
+	}
+	//	global.Input.d_x = (input_cursor_dx(0)*1.5 + (window_mouse_get_x() - window_get_width()/2))* global.Graphics.screenScale;
+	//global.Input.d_y = ((input_cursor_dy(0)*1.5) + (window_mouse_get_y() - window_get_height()/2))* global.Graphics.screenScale;
+	//+ (window_mouse_get_x() - window_get_width()/2))* global.Graphics.screenScale;
+	//+ (window_mouse_get_y() - window_get_height()/2))* global.Graphics.screenScale;
 	if(room==game_room && os_browser == browser_not_a_browser){
 		window_mouse_set(window_get_width()/2,window_get_height()/2);
 	}else if(room==game_room){
-		global.Input.d_x = window_mouse_get_delta_x() * global.Graphics.screenScale;
-		global.Input.d_y = window_mouse_get_delta_y() * global.Graphics.screenScale;
+		if(input_source_using(INPUT_GAMEPAD)){
+			global.Input.d_x = (input_cursor_dx()*1.5);
+			global.Input.d_y = ((input_cursor_dy()*1.5))
+		}else{
+			global.Input.d_x = window_mouse_get_delta_x() * global.Graphics.screenScale;
+			global.Input.d_y = window_mouse_get_delta_y() * global.Graphics.screenScale;
+		}
+		//global.Input.d_x = (input_value("aim_right") - input_value("aim_left"))* global.Graphics.screenScale;
+		//global.Input.d_y = (input_value("aim_down") - input_value("aim_up"))* global.Graphics.screenScale;
 	}
 	
 }
@@ -399,16 +418,39 @@ function process_user_inputs(){
 	if(keyboard_check_released(vk_tab)&& os_browser == browser_not_a_browser){
 		global.editMode = !global.editMode;
 	}
-	if(mouse_wheel_down()){
+	if(input_check("zoom_in")){
 		global.Graphics.targetMinScale = clamp(global.Graphics.targetMinScale + global.Settings.scrollRate.value* global.Graphics.screenScale, global.Graphics.screenScale, global.Graphics.maxScale);
 		
-	}else if(mouse_wheel_up()){
+	}else if(input_check("zoom_out")){
 			
-	global.Graphics.targetMinScale = clamp(global.Graphics.targetMinScale -  global.Settings.scrollRate.value* global.Graphics.screenScale, 0.5, global.Graphics.maxScale);
+		global.Graphics.targetMinScale = clamp(global.Graphics.targetMinScale -  global.Settings.scrollRate.value* global.Graphics.screenScale, 0.5, global.Graphics.maxScale);
 		
 	}
+	//if(input_check("cancel")){
+	//	trigger_reset();
+		
+	//}
+	if(input_check("pause")){
+		if(global.Law.inBrowser && window_mouse_get_locked()){
+	
+			window_mouse_set_locked(false);
+			window_set_cursor(cr_default)
+			return;
+		}
+		//if((global.projectileCount>0 )&& !global.Game.reset){
+
+		//	trigger_reset();
+		//}else{
+			if(room == game_room){
+				if(!global.Game.reset){
+					audio_stop_sound(endSound);
+					room_goto_previous();
+				}
+			}
+		//}	
+	}
 	if(!global.editMode){
-		if(keyboard_check(vk_control)){
+		if(input_check("precision")){
 			global.Input.d_x = global.Input.d_x/(4*global.Graphics.screenScale);
 			global.Input.d_y = global.Input.d_y/(4*global.Graphics.screenScale);
 		}
@@ -437,7 +479,7 @@ function process_user_inputs(){
 			global.Game.lastShot = global.Game.roomFrame;
 		}
 	}
-	if(mouse_check_button_pressed(mb_left)){
+	if(input_check("shoot")){
 		global.Input.shooting= true;
 		if(!global.editMode){
 			global.Input.mouse_click_start_x = get_struct_x_position(obj_game.level.start);
@@ -478,7 +520,7 @@ function process_user_inputs(){
 		global.Input.launch_y = global.Input.cursorY - global.Input.mouse_click_start_y;
 
 	}
-	if(mouse_check_button(mb_right) && global.Game.roomFrame - global.Game.lastShot > global.Law.baseShotDelay){
+	if(input_check("destruct") && global.Game.roomFrame - global.Game.lastShot > global.Law.baseShotDelay){
 		with(obj_projectile){
 			if(global.Graphics.minProjectile == noone || projectile._id < global.Graphics.minProjectile.projectile._id){
 				global.Graphics.minProjectile = id;
@@ -538,7 +580,7 @@ function process_user_inputs(){
 			    mouseInWindow = true;
 			}
 		}
-		if(mouse_check_button(mb_any)){
+		if(input_any_pressed()){
 			if(!window_mouse_get_locked()){
 				window_mouse_set_locked(true);	
 				
@@ -554,7 +596,7 @@ function process_user_inputs(){
 			}
 		
 		}
-		if(mouse_check_button(mb_left)){
+		if(input_check("shoot")){
 			if(!global.editMode){
 				if(global.Game.roomFrame > global.Game.lastShot+global.Game.shotDelay){
 					global.Game.lastShot = global.Game.roomFrame;
@@ -585,7 +627,7 @@ function process_user_inputs(){
 				}
 			}
 		}else{
-			if(!keyboard_check(vk_shift)){
+			if(!input_check("last_shot")){
 				audio_sound_gain(shootingSound,0,1000);
 				global.Input.shooting= false;
 			}
@@ -594,7 +636,7 @@ function process_user_inputs(){
 				trigger_grid_update();
 			}
 		}
-		if((!mouseInWindow && global.Law.inBrowser) ||(!keyboard_check(vk_shift) && !mouse_check_button(mb_left))){
+		if((!mouseInWindow && global.Law.inBrowser) ||(!input_check("last_shot") && !input_check("shoot"))){
 			audio_sound_gain(shootingSound,0,1000);
 			global.Input.shooting= false;
 		}

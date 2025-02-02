@@ -53,7 +53,7 @@ function create_default_laws(){
 		pMassFactor: 150,
 		inBrowser: os_browser != browser_not_a_browser,
 		threeD: os_browser == browser_not_a_browser || webgl_enabled,
-		gridMass: 1,
+		gridMass: 10000,
 		depthMod: 1,
 		physRate: 60,
 		gridVertexFormat: create_vertex_format(),

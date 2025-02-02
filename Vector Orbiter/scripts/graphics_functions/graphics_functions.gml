@@ -676,12 +676,15 @@ function draw_components(_x, _y, _scale, _level){
 }
 function draw_shoot_cursor(){
 	draw_set_color(global.backgroundColor);
+	var cursorSize = 10;
+	if(input_check("precision"))
+		cursorSize = 5;
 	if(!global.editMode){
 		if(global.Input.shooting && global.show_ui){
 			draw_set_alpha(.4);
 			draw_line_width(get_struct_x_position(level.start),get_struct_y_position(level.start),global.Input.cursorX, global.Input.cursorY,10* global.Graphics.screenScale)
 			draw_set_alpha(1);
-			draw_circle(global.Input.cursorX, global.Input.cursorY, 5 * global.Graphics.screenScale,!global.Input.shooting);	
+			draw_circle(global.Input.cursorX, global.Input.cursorY, cursorSize * global.Graphics.screenScale,!global.Input.shooting);	
 		}
 	}
 }
@@ -689,18 +692,21 @@ function draw_aim_cursor(){
 	
 	draw_set_alpha(1);
 	if(!global.Input.shooting&& global.show_ui){
+		var cursorSize = 10;
+		if(input_check("precision"))
+			cursorSize = 5;
 		draw_set_color(c_black)
-		draw_circle(global.Input.cursorX, global.Input.cursorY, 5 * global.Graphics.screenScale-1,false);
+		draw_circle(global.Input.cursorX, global.Input.cursorY,cursorSize * global.Graphics.screenScale-1,false);
 		draw_set_color(make_color_hsv(color_get_hue(global.projectileColor),global.Settings.colorSaturation.value,global.Settings.colorValue.value/2));
-		draw_circle(global.Input.cursorX, global.Input.cursorY, 5 * global.Graphics.screenScale,!global.Input.shooting);	
+		draw_circle(global.Input.cursorX, global.Input.cursorY, cursorSize * global.Graphics.screenScale,!global.Input.shooting);	
 		if(global.debugMode< DebugMode.NONE){
 			draw_text(global.Input.cursorX, global.Input.cursorY + 10,"X: " + string(global.Input.cursorX) + "\nY: " + string(global.Input.cursorY));	
 		}
 		if(!instance_exists(obj_main_menu) && last_shot_position[0] != infinity){
 			draw_set_color(global.goodColor);
 			draw_set_alpha(0.5)
-			draw_circle(last_shot_position[0], last_shot_position[1], 5 * global.Graphics.screenScale-1,true);
-			draw_text(last_shot_position[0] + 5, last_shot_position[1] + 5 , "last shot");
+			draw_circle(last_shot_position[0], last_shot_position[1], cursorSize * global.Graphics.screenScale-1,true);
+			draw_text(last_shot_position[0] + cursorSize, last_shot_position[1] + cursorSize , "last shot");
 		}
 	}
 	if(global.debugMode< DebugMode.NONE){

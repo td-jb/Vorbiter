@@ -114,4 +114,5 @@ if(!global.Settings.fullGrid.value){
 init_sim_grid();
 fill_grid_buffer(true);
 audio_play_sound(opening_sound,0,false,0.8);
+input_cursor_mouse_enabled_set(true);
 #endregion

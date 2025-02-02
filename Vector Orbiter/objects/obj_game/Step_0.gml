@@ -40,7 +40,7 @@ if(!global.intro && window_has_focus()){
 	}
 	else{
 	
-		if( mouse_check_button_released(mb_any)){
+		if( input_any_pressed()){
 			end_postgame();
 		}	
 		return;
@@ -61,6 +61,7 @@ if(!global.intro && window_has_focus()){
 		ai_player();
 	}
 }
+set_object_positions();
 set_cursor_position();
 set_camera_view();
 if(global.Law.threeD && !global.Settings.fullGrid.value){

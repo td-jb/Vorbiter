@@ -31,7 +31,9 @@ button_width = 250;
 button_height = 40;
 button_margin = 5;
 selected_button = -1;
-
+up_down = 0;
+base_delay = 10;
+delay = 0;
 global.Input.cursorX =0;
 global.Input.cursorY = 0;
 button_offset_x = view_wport[0]/2-button_width/2;
